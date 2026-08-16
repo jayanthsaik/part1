@@ -1,6 +1,8 @@
 OrderbookAutomation/Input/
 OrderbookAutomation/logs/
 OrderbookAutomation/output/
+OrderbookAutomation/dist/
+OrderbookAutomation/build/
 
 # Python bytecode cache (any folder, anywhere in the repo)
 __pycache__/

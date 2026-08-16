@@ -117,7 +117,13 @@ SOURCE_SPECS: tuple[SourceSpec, ...] = (
             SALES_SUMMARY_COLUMNS["forecast_qty"],
             SALES_SUMMARY_COLUMNS["material_description"],
             SALES_SUMMARY_COLUMNS["pack_size"],
-            SALES_SUMMARY_COLUMNS["lookup"],
+            # NOTE: SALES_SUMMARY_COLUMNS["lookup"] ("Lookup") is
+            # intentionally NOT listed as a preferred/payload column here.
+            # It is used ONLY as this source's own join key (see the
+            # "Lookup" JoinStrategy below); it must never be copied into
+            # master_df, which already carries the canonical Lookup
+            # (NDC Code + Sold-to party Name) created before this merge
+            # loop runs. See _ensure_lookup().
             SALES_SUMMARY_COLUMNS["ndc_code"],
             SALES_SUMMARY_COLUMNS["sold_to_party_name"],
         ),
@@ -164,7 +170,12 @@ SOURCE_SPECS: tuple[SourceSpec, ...] = (
             AWARDS_COLUMNS["description"],
             AWARDS_COLUMNS["customer"],
             AWARDS_COLUMNS["sold_to_party"],
-            AWARDS_COLUMNS["lookup"],
+            # NOTE: AWARDS_COLUMNS["lookup"] ("Lookup") is intentionally NOT
+            # listed as a preferred/payload column here. It is used ONLY as
+            # this source's own join key (see the "Lookup" JoinStrategy
+            # below); it must never be copied into master_df, which already
+            # carries the canonical Lookup (NDC Code + Sold-to party Name)
+            # created before this merge loop runs. See _ensure_lookup().
             AWARDS_COLUMNS["ndc"],
         ),
         strategies=(
@@ -205,6 +216,13 @@ def build_master_workbook(
     if debug_keep_temp_keys is None:
         debug_keep_temp_keys = get_debug_keep_temp_keys_default()
 
+    # Build the canonical Lookup (NDC Code + Sold-to party Name) from the
+    # orderbook's own data BEFORE any SOURCE_SPECS merge runs. This ensures
+    # every "Lookup"-keyed join strategy below (Open Order Summary, Sales
+    # Summary, Sales Trend, Awards) matches against the canonical,
+    # orderbook-derived Lookup rather than an absent/foreign value.
+    master_df = _ensure_lookup(master_df, logger=logger)
+
     for spec in SOURCE_SPECS:
         source_df = source_frames.get(spec.dataframe_key)
         if source_df is None or source_df.empty:
@@ -231,7 +249,12 @@ def build_master_workbook(
         )
         audit_rows.append(audit_row)
 
-    master_df = _ensure_lookup(master_df)
+    # Safety net: re-assert the canonical Lookup after all merges, in case
+    # any source's payload columns coincidentally introduced a column named
+    # "Lookup" despite the preferred_columns exclusions above. This never
+    # trusts a foreign value -- it always recomputes from NDC Code +
+    # Sold-to party Name, which the merge loop never modifies.
+    master_df = _ensure_lookup(master_df, logger=logger)
     master_df = _preserve_orderbook_column_order(master_df, original_orderbook_columns)
 
     merge_audit_df = pd.DataFrame(
@@ -428,19 +451,67 @@ def _normalized_value_count(df: pd.DataFrame, columns: Sequence[str], modes: Seq
     return changes
 
 
-def _ensure_lookup(df: pd.DataFrame) -> pd.DataFrame:
+def _ensure_lookup(df: pd.DataFrame, logger=None) -> pd.DataFrame:
+    """(Re)build the canonical master "Lookup" column from the orderbook's
+    own NDC Code + Sold-to party Name.
+
+    This is intentionally unconditional: unlike the previous implementation,
+    it no longer skips recomputation just because a "Lookup" column already
+    exists. A pre-existing "Lookup" column can only ever have come from a
+    source workbook (e.g. Sales Summary, Awards) accidentally leaking its own
+    "Lookup" column into the master dataframe; that value is never
+    authoritative and must be overwritten with the canonical
+    NDC Code + Sold-to party Name derivation so the master "Lookup" always
+    reflects the orderbook's own data, never a foreign source's value.
+
+    The original "NDC Code" and "Sold-to party Name" columns are never
+    modified -- only temporary normalized values (via _normalize_key) are
+    used to build "Lookup".
+    """
     working = df.copy()
-    if "Lookup" in working.columns:
-        return working
     ndc_column = LOOKUP_COLUMNS["ndc_code"]
     sold_to_column = ORDERBOOK_COLUMNS["sold_to_party_name"]
+
     if ndc_column in working.columns and sold_to_column in working.columns:
         working["Lookup"] = _normalize_key(working[ndc_column], "ndc").fillna("") + _normalize_key(working[sold_to_column], "text").fillna("")
         working["Lookup"] = working["Lookup"].replace("", pd.NA)
     else:
-        # TODO: Verify business rule for Lookup when either NDC Code or Sold-to party Name is unavailable.
-        pass
+        # NDC Code and/or Sold-to party Name are unavailable on the
+        # orderbook dataframe, so no canonical Lookup can be derived. Any
+        # pre-existing "Lookup" column (e.g. leaked from a source workbook)
+        # is explicitly dropped rather than left in place, since it would
+        # not be the canonical NDC Code + Sold-to party Name value and must
+        # never be mistaken for it.
+        if "Lookup" in working.columns:
+            working = working.drop(columns=["Lookup"])
+        working["Lookup"] = pd.Series(pd.NA, index=working.index, dtype="string")
+
+    if logger is not None:
+        _validate_lookup(working, ndc_column, sold_to_column, logger)
+
     return working
+
+
+def _validate_lookup(df: pd.DataFrame, ndc_column: str, sold_to_column: str, logger) -> None:
+    """Log/validate canonical Lookup construction health (non-fatal, informational)."""
+    duplicate_lookup_columns = [column for column in df.columns if column in ("Lookup_x", "Lookup_y", "Lookup_source")]
+    if duplicate_lookup_columns:
+        logger.warning("Unexpected duplicate Lookup-like columns found on master dataframe: %s", duplicate_lookup_columns)
+
+    total_rows = len(df)
+    has_ndc = df[ndc_column].notna().sum() if ndc_column in df.columns else 0
+    has_customer = df[sold_to_column].notna().sum() if sold_to_column in df.columns else 0
+    has_lookup = int(df["Lookup"].notna().sum()) if "Lookup" in df.columns else 0
+    missing_lookup = total_rows - has_lookup
+
+    logger.info(
+        "Lookup construction stats | total_rows=%s | rows_with_ndc=%s | rows_with_sold_to_party_name=%s | rows_with_valid_lookup=%s | rows_missing_lookup=%s",
+        total_rows,
+        int(has_ndc),
+        int(has_customer),
+        has_lookup,
+        missing_lookup,
+    )
 
 
 def get_debug_keep_temp_keys_default() -> bool:
