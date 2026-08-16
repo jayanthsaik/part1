@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import pandas as pd
 
+from modules.sc_comments_lookup import (
+    SC_COMMENTS_STATUS_COLUMN,
+    SC_COMMENTS_VALUE_COLUMN,
+    build_sc_comments_lookup,
+)
 from modules.utils import normalize_identifier_key, normalize_ndc_key, normalize_text_key
 
 
@@ -19,6 +24,8 @@ class FinalOrderbookResult:
     sc_comments_missing: int
     buying_group_missing: int
     award_missing: int
+    sc_comments_exceptions_df: pd.DataFrame = field(default_factory=pd.DataFrame)
+    sc_comments_duplicate_conflicts: int = 0
 
 
 def _merge_on_normalized_key(
@@ -108,22 +115,27 @@ def enrich_master_with_phase2_and_cip(
         working["MOQ_Issue"] = pd.NA
         logger.warning("MOQ_Issue could not be merged into the final dataset (missing source or key column)")
 
-    sc_comments_matches = 0
-    if cip_df is not None and not cip_df.empty and "NDC Code" in working.columns and "NDC" in cip_df.columns and "Comments" in cip_df.columns:
-        working, sc_comments_matches = _merge_on_normalized_key(
-            working,
-            cip_df,
-            left_key="NDC Code",
-            right_key="NDC",
-            value_columns=["Comments"],
-            mode="ndc",
-        )
-        working = working.rename(columns={"Comments": "SC Comments"})
-    else:
-        working["SC Comments"] = pd.NA
-        logger.warning("SC Comments could not be merged from CIP (missing source or key column)")
+    # SC Comments use a dedicated, auditable lookup (see
+    # modules/sc_comments_lookup.py). NDC remains the primary key, per the
+    # documented VLOOKUP-on-NDC business process, but duplicate NDCs in the
+    # Critical Inventory source are no longer silently resolved by keeping
+    # the first row: without a date/version column there is no valid
+    # "most recent tracker" rule, so conflicts are flagged and left blank.
+    sc_comments_result = build_sc_comments_lookup(
+        working,
+        cip_df,
+        master_ndc_column="NDC Code",
+        master_customer_column="Sold-to party Name",
+        source_ndc_column="NDC",
+        source_comment_column="Comments",
+        logger=logger,
+    )
+    working = sc_comments_result.dataframe
+    sc_comments_matches = sc_comments_result.matched_rows
+    sc_comments_exceptions_df = sc_comments_result.exceptions_df
+    sc_comments_duplicate_conflicts = sc_comments_result.duplicate_conflict_rows
 
-    sc_comments_missing = int(working["SC Comments"].isna().sum())
+    sc_comments_missing = int(working[SC_COMMENTS_VALUE_COLUMN].isna().sum())
     buying_group_missing = int(working["Buying Group"].isna().sum()) if "Buying Group" in working.columns else len(working)
     award_missing = int(working["Award Type"].isna().sum()) if "Award Type" in working.columns else len(working)
 
@@ -145,6 +157,8 @@ def enrich_master_with_phase2_and_cip(
         sc_comments_missing=sc_comments_missing,
         buying_group_missing=buying_group_missing,
         award_missing=award_missing,
+        sc_comments_exceptions_df=sc_comments_exceptions_df,
+        sc_comments_duplicate_conflicts=sc_comments_duplicate_conflicts,
     )
 
 

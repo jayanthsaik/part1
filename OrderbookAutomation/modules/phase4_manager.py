@@ -397,6 +397,16 @@ def run_phase4(
     )
     write_dataframe_sheet(sales_summary_workbook, "Audit", audit_df)
 
+    # Diagnostics for the dedicated SC Comments lookup. This is an internal
+    # audit sheet on Sales_Summary.xlsx only; the client-facing POB.xlsx
+    # sheet set (POB_CLIENT_FACING_SHEETS) is unchanged.
+    if enrichment_result.sc_comments_exceptions_df is not None and not enrichment_result.sc_comments_exceptions_df.empty:
+        write_dataframe_sheet(
+            sales_summary_workbook,
+            "SC_Comments_Exceptions",
+            enrichment_result.sc_comments_exceptions_df,
+        )
+
     exceptions_rows = []
     if historical_result.missing_lookup_count > 0:
         exceptions_rows.append({"Type": "MISSING_HISTORICAL_SALES", "Count": historical_result.missing_lookup_count})

@@ -22,6 +22,7 @@ from config import (
     SALES_SUMMARY_COLUMNS,
     SALES_TREND_COLUMNS,
 )
+from modules.award_lookup import AWARD_EXCEPTION_COLUMNS, build_award_lookup
 from modules.buying_group_lookup import AUDIT_COLUMNS, EXCEPTION_COLUMNS, build_buying_group_lookup
 from modules.utils import normalize_identifier_key, normalize_ndc_key, normalize_text_key
 
@@ -61,6 +62,7 @@ class MasterBuildResult:
     statistics_df: pd.DataFrame
     buying_group_exceptions_df: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=EXCEPTION_COLUMNS))
     buying_group_audit_df: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=AUDIT_COLUMNS))
+    award_exceptions_df: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=AWARD_EXCEPTION_COLUMNS))
 
 
 SOURCE_SPECS: tuple[SourceSpec, ...] = (
@@ -154,29 +156,6 @@ SOURCE_SPECS: tuple[SourceSpec, ...] = (
             JoinStrategy(("Lookup",), (SALES_TREND_COLUMNS["lookup"],), ("lookup",), "Lookup"),
             JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (SALES_TREND_COLUMNS["ndc_code"],), ("ndc",), "NDC Code"),
             JoinStrategy((ORDERBOOK_COLUMNS["sold_to_party_name"],), (SALES_TREND_COLUMNS["sold_to_party_name"],), ("text",), "Sold To Party Name"),
-        ),
-    ),
-    SourceSpec(
-        source_name="Awards",
-        source_file="Awards.xlsx",
-        dataframe_key="awards",
-        preferred_columns=(
-            AWARDS_COLUMNS["award_type"],
-            AWARDS_COLUMNS["description"],
-            AWARDS_COLUMNS["customer"],
-            AWARDS_COLUMNS["sold_to_party"],
-            # NOTE: AWARDS_COLUMNS["lookup"] ("Lookup") is intentionally NOT
-            # listed as a preferred/payload column here. It is used ONLY as
-            # this source's own join key (see the "Lookup" JoinStrategy
-            # below); it must never be copied into master_df, which already
-            # carries the canonical Lookup (NDC Code + Sold-to party Name)
-            # created before this merge loop runs. See _ensure_lookup().
-            AWARDS_COLUMNS["ndc"],
-        ),
-        strategies=(
-            JoinStrategy(("Lookup",), (AWARDS_COLUMNS["lookup"],), ("lookup",), "Lookup"),
-            JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (AWARDS_COLUMNS["ndc"],), ("ndc",), "NDC Code"),
-            JoinStrategy((ORDERBOOK_COLUMNS["sold_to_party_name"],), (AWARDS_COLUMNS["customer"],), ("text",), "Sold To Party Name to Customer"),
         ),
     ),
     SourceSpec(
@@ -279,6 +258,44 @@ def build_master_workbook(
         )
     )
 
+    # Award Type uses a dedicated, auditable lookup (see
+    # modules/award_lookup.py) instead of the generic SOURCE_SPECS merge
+    # engine. The grain is the one the source data proves correct --
+    # Lookup (Customer + NDC) primary, normalized NDC as a product-level
+    # fallback. The previous customer-level fallback (Sold-to party Name ->
+    # Awards.Customer) has been REMOVED: 19 of 80 sold-to-parties in
+    # Awards.xlsx carry more than one distinct Award Type across their NDCs,
+    # so customer-only matching is provably ambiguous and business-incorrect.
+    award_result = build_award_lookup(
+        master_df,
+        source_frames.get("awards"),
+        master_lookup_column="Lookup",
+        master_ndc_column=LOOKUP_COLUMNS["ndc_code"],
+        master_customer_column=ORDERBOOK_COLUMNS["sold_to_party_name"],
+        source_lookup_column=AWARDS_COLUMNS["lookup"],
+        source_ndc_column=AWARDS_COLUMNS["ndc"],
+        award_column=AWARDS_COLUMNS["award_type"],
+        logger=logger,
+    )
+    master_df = award_result.dataframe
+    audit_rows.append(
+        MergeAuditRow(
+            source_file="Awards.xlsx",
+            columns_added=AWARDS_COLUMNS["award_type"],
+            join_key="Lookup (Customer+NDC), NDC Code fallback",
+            rows_updated=award_result.populated_rows,
+            rows_missing=award_result.blank_rows,
+            duplicate_keys_found=award_result.duplicate_conflict_rows,
+            comments=(
+                "Dedicated Award lookup at Customer+NDC grain; "
+                f"matched_by_lookup={award_result.matched_by_lookup}; "
+                f"matched_by_ndc={award_result.matched_by_ndc}; "
+                f"not_found={award_result.not_found_rows}; "
+                f"duplicate_conflict={award_result.duplicate_conflict_rows}"
+            ),
+        )
+    )
+
     # Safety net: re-assert the canonical Lookup after all merges, in case
     # any source's payload columns coincidentally introduced a column named
     # "Lookup" despite the preferred_columns exclusions above. This never
@@ -308,6 +325,7 @@ def build_master_workbook(
         statistics_df,
         buying_group_result.exceptions_df,
         buying_group_result.audit_df,
+        award_result.exceptions_df,
         output_path,
     )
     logger.info("Saved master workbook to %s", output_path)
@@ -317,6 +335,7 @@ def build_master_workbook(
         statistics_df=statistics_df,
         buying_group_exceptions_df=buying_group_result.exceptions_df,
         buying_group_audit_df=buying_group_result.audit_df,
+        award_exceptions_df=award_result.exceptions_df,
     )
 
 
@@ -616,6 +635,7 @@ def _write_validation_workbook(
     statistics_df: pd.DataFrame,
     buying_group_exceptions_df: pd.DataFrame,
     buying_group_audit_df: pd.DataFrame,
+    award_exceptions_df: pd.DataFrame,
     output_path: Path,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -625,6 +645,7 @@ def _write_validation_workbook(
         statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
         buying_group_exceptions_df.to_excel(writer, sheet_name="Buying_Group_Exceptions", index=False)
         buying_group_audit_df.to_excel(writer, sheet_name="Buying_Group_Audit", index=False)
+        award_exceptions_df.to_excel(writer, sheet_name="Award_Exceptions", index=False)
 
     workbook = load_workbook(output_path)
     for worksheet in workbook.worksheets:
