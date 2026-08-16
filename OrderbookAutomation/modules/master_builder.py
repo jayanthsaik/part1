@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
 from typing import Mapping, Sequence
@@ -21,6 +21,7 @@ from config import (
     SALES_SUMMARY_COLUMNS,
     SALES_TREND_COLUMNS,
 )
+from modules.buying_group_lookup import build_buying_group_lookup
 from modules.utils import normalize_identifier_key, normalize_ndc_key, normalize_text_key
 
 
@@ -57,6 +58,7 @@ class MasterBuildResult:
     master_df: pd.DataFrame
     merge_audit_df: pd.DataFrame
     statistics_df: pd.DataFrame
+    buying_group_exceptions_df: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=["Customer", "Normalized Customer", "Buying Group(s)", "Status", "Reason"]))
 
 
 SOURCE_SPECS: tuple[SourceSpec, ...] = (
@@ -153,15 +155,6 @@ SOURCE_SPECS: tuple[SourceSpec, ...] = (
         ),
     ),
     SourceSpec(
-        source_name="Buying Groups",
-        source_file="Buying_groups.xlsx",
-        dataframe_key="buying_groups",
-        preferred_columns=(BUYING_GROUP_COLUMNS["buying_group"], BUYING_GROUP_COLUMNS["customer"]),
-        strategies=(
-            JoinStrategy((ORDERBOOK_COLUMNS["sold_to_party_name"],), (BUYING_GROUP_COLUMNS["customer"],), ("text",), "Sold To Party Name to Customer"),
-        ),
-    ),
-    SourceSpec(
         source_name="Awards",
         source_file="Awards.xlsx",
         dataframe_key="awards",
@@ -249,6 +242,38 @@ def build_master_workbook(
         )
         audit_rows.append(audit_row)
 
+    # Buying Group uses a dedicated, auditable lookup (see
+    # modules/buying_group_lookup.py) instead of the generic SOURCE_SPECS
+    # merge engine, to guarantee: normalized/deduplicated source matching,
+    # explicit conflict detection (never guessing), an exact master row
+    # count guarantee, and a business-facing lookup status column. This
+    # replaces the previous "Buying Groups" SourceSpec.
+    buying_groups_df = source_frames.get("buying_groups")
+    buying_group_result = build_buying_group_lookup(
+        master_df,
+        buying_groups_df,
+        master_customer_column=ORDERBOOK_COLUMNS["sold_to_party_name"],
+        source_customer_column=BUYING_GROUP_COLUMNS["customer"],
+        source_buying_group_column=BUYING_GROUP_COLUMNS["buying_group"],
+        logger=logger,
+    )
+    master_df = buying_group_result.dataframe
+    audit_rows.append(
+        MergeAuditRow(
+            source_file="Buying_groups.xlsx",
+            columns_added=BUYING_GROUP_COLUMNS["buying_group"],
+            join_key=ORDERBOOK_COLUMNS["sold_to_party_name"],
+            rows_updated=buying_group_result.populated_rows,
+            rows_missing=buying_group_result.blank_rows,
+            duplicate_keys_found=buying_group_result.conflicting_customers,
+            comments=(
+                "Dedicated Buying Group lookup; "
+                f"exact_duplicate_source_rows_removed={buying_group_result.exact_duplicate_source_rows_removed}; "
+                f"conflicting_customers={buying_group_result.conflicting_customers}"
+            ),
+        )
+    )
+
     # Safety net: re-assert the canonical Lookup after all merges, in case
     # any source's payload columns coincidentally introduced a column named
     # "Lookup" despite the preferred_columns exclusions above. This never
@@ -272,9 +297,14 @@ def build_master_workbook(
         ]
     )
     statistics_df = _build_statistics(master_orderbook_df, master_df)
-    _write_validation_workbook(master_df, merge_audit_df, statistics_df, output_path)
+    _write_validation_workbook(master_df, merge_audit_df, statistics_df, buying_group_result.exceptions_df, output_path)
     logger.info("Saved master workbook to %s", output_path)
-    return MasterBuildResult(master_df=master_df, merge_audit_df=merge_audit_df, statistics_df=statistics_df)
+    return MasterBuildResult(
+        master_df=master_df,
+        merge_audit_df=merge_audit_df,
+        statistics_df=statistics_df,
+        buying_group_exceptions_df=buying_group_result.exceptions_df,
+    )
 
 
 def _merge_source(
@@ -567,12 +597,19 @@ def _missing_count(df: pd.DataFrame, column_name: str) -> int:
     return int(df[column_name].isna().sum())
 
 
-def _write_validation_workbook(master_df: pd.DataFrame, audit_df: pd.DataFrame, statistics_df: pd.DataFrame, output_path: Path) -> None:
+def _write_validation_workbook(
+    master_df: pd.DataFrame,
+    audit_df: pd.DataFrame,
+    statistics_df: pd.DataFrame,
+    buying_group_exceptions_df: pd.DataFrame,
+    output_path: Path,
+) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         master_df.to_excel(writer, sheet_name="Master_Data", index=False)
         audit_df.to_excel(writer, sheet_name="Merge_Audit", index=False)
         statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
+        buying_group_exceptions_df.to_excel(writer, sheet_name="Buying_Group_Exceptions", index=False)
 
     workbook = load_workbook(output_path)
     for worksheet in workbook.worksheets:
