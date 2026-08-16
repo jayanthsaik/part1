@@ -109,7 +109,10 @@ SOURCE_DEFINITIONS: dict[str, SourceDefinition] = {
         logical_name="open_order_summary",
         display_name="Open Order Summary",
         required_headers=("SKU", " Total ", "Pickticket Status"),
-        optional_headers=("IM_SKU_DESC", "PH_SOLDTO_NAME", "SO#"),
+        # "Customer Group" is a fallback (priority 3) Buying Group mapping
+        # column consumed by modules/buying_group_lookup.py. It is optional
+        # so its absence never fails discovery for this source.
+        optional_headers=("IM_SKU_DESC", "PH_SOLDTO_NAME", "SO#", "Customer Group"),
         preferred_sheet_names=("Sheet1",),
         filename_hint="Open Order Summary export",
     ),

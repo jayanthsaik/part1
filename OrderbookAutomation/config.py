@@ -50,6 +50,7 @@ OPEN_ORDER_COLUMNS = {
     "total": " Total ",
     "im_sku_desc": "IM_SKU_DESC",
     "ph_soldto_name": "PH_SOLDTO_NAME",
+    "customer_group": "Customer Group",
     "pickticket_status": "Pickticket Status",
     "lookup": "x",
     "no_of_days": "No of days",
@@ -100,6 +101,66 @@ SALES_TREND_COLUMNS = {
     "ndc_code": "NDC Code",
     "sold_to_party_name": "Sold-to party Name",
 }
+
+
+@dataclass(frozen=True)
+class BuyingGroupSource:
+    """One authoritative Customer -> Buying Group mapping source.
+
+    ``Buying_groups.xlsx`` is only ONE of several workbooks supplied to the
+    application that carry a customer-to-group mapping, and it is known to
+    be incomplete. Each entry below declares, for a single logical source:
+
+    - ``dataframe_key``: the key under which Phase 3 passes this source's
+      dataframe into ``build_master_workbook(source_frames=...)``.
+    - ``display_name``: the business-facing source filename recorded in the
+      "Buying Group Source" lineage column and audit sheet.
+    - ``customer_column`` / ``buying_group_column``: the EXACT business
+      header names in that source. These are never renamed or normalized on
+      disk; only temporary normalized match keys are derived from them.
+    - ``priority``: 1 = highest. Lower-priority sources are consulted ONLY
+      as a fallback, and a higher-priority value always wins a cross-source
+      disagreement (this is a deterministic resolution, NOT a conflict).
+
+    A DUPLICATE_CONFLICT is raised only when a single priority tier maps one
+    normalized customer to two or more distinct Buying Group values, because
+    only then is there no deterministic rule available to choose between them.
+    """
+
+    dataframe_key: str
+    display_name: str
+    customer_column: str
+    buying_group_column: str
+    priority: int
+
+
+# Authoritative Buying Group sources, in resolution priority order.
+# Priority 1 is the dedicated, business-maintained Buying Group master.
+# Priorities 2/3 are broader-coverage operational exports consulted only
+# when a customer is absent from every higher-priority source.
+BUYING_GROUP_SOURCES: Sequence[BuyingGroupSource] = (
+    BuyingGroupSource(
+        dataframe_key="buying_groups",
+        display_name="Buying_groups.xlsx",
+        customer_column=BUYING_GROUP_COLUMNS["customer"],
+        buying_group_column=BUYING_GROUP_COLUMNS["buying_group"],
+        priority=1,
+    ),
+    BuyingGroupSource(
+        dataframe_key="sales_trend",
+        display_name="Strend.xlsx",
+        customer_column=SALES_TREND_COLUMNS["sold_to_party_name"],
+        buying_group_column=SALES_TREND_COLUMNS["customer_group"],
+        priority=2,
+    ),
+    BuyingGroupSource(
+        dataframe_key="open_orders",
+        display_name="Open_Order_Summary.xlsx",
+        customer_column=OPEN_ORDER_COLUMNS["ph_soldto_name"],
+        buying_group_column=OPEN_ORDER_COLUMNS["customer_group"],
+        priority=3,
+    ),
+)
 
 
 @dataclass(frozen=True)

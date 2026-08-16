@@ -13,6 +13,7 @@ from openpyxl.utils import get_column_letter
 from config import (
     AWARDS_COLUMNS,
     BUYING_GROUP_COLUMNS,
+    BUYING_GROUP_SOURCES,
     CIP_COLUMNS,
     INVENTORY_COLUMNS,
     LOOKUP_COLUMNS,
@@ -21,7 +22,7 @@ from config import (
     SALES_SUMMARY_COLUMNS,
     SALES_TREND_COLUMNS,
 )
-from modules.buying_group_lookup import build_buying_group_lookup
+from modules.buying_group_lookup import AUDIT_COLUMNS, EXCEPTION_COLUMNS, build_buying_group_lookup
 from modules.utils import normalize_identifier_key, normalize_ndc_key, normalize_text_key
 
 
@@ -58,7 +59,8 @@ class MasterBuildResult:
     master_df: pd.DataFrame
     merge_audit_df: pd.DataFrame
     statistics_df: pd.DataFrame
-    buying_group_exceptions_df: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=["Customer", "Normalized Customer", "Buying Group(s)", "Status", "Reason"]))
+    buying_group_exceptions_df: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=EXCEPTION_COLUMNS))
+    buying_group_audit_df: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=AUDIT_COLUMNS))
 
 
 SOURCE_SPECS: tuple[SourceSpec, ...] = (
@@ -242,34 +244,37 @@ def build_master_workbook(
         )
         audit_rows.append(audit_row)
 
-    # Buying Group uses a dedicated, auditable lookup (see
+    # Buying Group uses a dedicated, auditable MULTI-SOURCE lookup (see
     # modules/buying_group_lookup.py) instead of the generic SOURCE_SPECS
-    # merge engine, to guarantee: normalized/deduplicated source matching,
-    # explicit conflict detection (never guessing), an exact master row
-    # count guarantee, and a business-facing lookup status column. This
-    # replaces the previous "Buying Groups" SourceSpec.
-    buying_groups_df = source_frames.get("buying_groups")
+    # merge engine. Buying_groups.xlsx alone is known to be incomplete, so
+    # every authoritative Customer -> Buying Group source declared in
+    # config.BUYING_GROUP_SOURCES is consolidated and resolved by source
+    # priority. This guarantees: normalized/deduplicated matching, priority
+    # based (never arbitrary) resolution of cross-source disagreements,
+    # same-tier conflict detection, an exact master row count guarantee, and
+    # business-facing status + source-lineage columns.
     buying_group_result = build_buying_group_lookup(
         master_df,
-        buying_groups_df,
+        source_frames,
         master_customer_column=ORDERBOOK_COLUMNS["sold_to_party_name"],
-        source_customer_column=BUYING_GROUP_COLUMNS["customer"],
-        source_buying_group_column=BUYING_GROUP_COLUMNS["buying_group"],
+        buying_group_sources=BUYING_GROUP_SOURCES,
         logger=logger,
     )
     master_df = buying_group_result.dataframe
     audit_rows.append(
         MergeAuditRow(
-            source_file="Buying_groups.xlsx",
+            source_file=", ".join(source.display_name for source in BUYING_GROUP_SOURCES),
             columns_added=BUYING_GROUP_COLUMNS["buying_group"],
             join_key=ORDERBOOK_COLUMNS["sold_to_party_name"],
             rows_updated=buying_group_result.populated_rows,
             rows_missing=buying_group_result.blank_rows,
             duplicate_keys_found=buying_group_result.conflicting_customers,
             comments=(
-                "Dedicated Buying Group lookup; "
+                "Multi-source Buying Group lookup (priority-resolved); "
                 f"exact_duplicate_source_rows_removed={buying_group_result.exact_duplicate_source_rows_removed}; "
-                f"conflicting_customers={buying_group_result.conflicting_customers}"
+                f"same_priority_conflicts={buying_group_result.conflicting_customers}; "
+                f"lower_priority_disagreements={buying_group_result.lower_priority_disagreements}; "
+                f"matches_by_source={buying_group_result.matches_by_source}"
             ),
         )
     )
@@ -297,13 +302,21 @@ def build_master_workbook(
         ]
     )
     statistics_df = _build_statistics(master_orderbook_df, master_df)
-    _write_validation_workbook(master_df, merge_audit_df, statistics_df, buying_group_result.exceptions_df, output_path)
+    _write_validation_workbook(
+        master_df,
+        merge_audit_df,
+        statistics_df,
+        buying_group_result.exceptions_df,
+        buying_group_result.audit_df,
+        output_path,
+    )
     logger.info("Saved master workbook to %s", output_path)
     return MasterBuildResult(
         master_df=master_df,
         merge_audit_df=merge_audit_df,
         statistics_df=statistics_df,
         buying_group_exceptions_df=buying_group_result.exceptions_df,
+        buying_group_audit_df=buying_group_result.audit_df,
     )
 
 
@@ -602,6 +615,7 @@ def _write_validation_workbook(
     audit_df: pd.DataFrame,
     statistics_df: pd.DataFrame,
     buying_group_exceptions_df: pd.DataFrame,
+    buying_group_audit_df: pd.DataFrame,
     output_path: Path,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -610,6 +624,7 @@ def _write_validation_workbook(
         audit_df.to_excel(writer, sheet_name="Merge_Audit", index=False)
         statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
         buying_group_exceptions_df.to_excel(writer, sheet_name="Buying_Group_Exceptions", index=False)
+        buying_group_audit_df.to_excel(writer, sheet_name="Buying_Group_Audit", index=False)
 
     workbook = load_workbook(output_path)
     for worksheet in workbook.worksheets:
