@@ -1,0 +1,7 @@
+pandas>=2.2.0
+openpyxl>=3.1.0
+
+# Build-time only dependency, used to package the application into a
+# standalone Windows executable (see OrderbookAutomation.spec / build_exe.bat).
+# Not required to run the application in normal "python main.py" mode.
+pyinstaller>=6.10.0

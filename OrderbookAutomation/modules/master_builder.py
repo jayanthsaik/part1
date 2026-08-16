@@ -1,0 +1,519 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+import os
+from pathlib import Path
+from typing import Mapping, Sequence
+
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
+
+from config import (
+    AWARDS_COLUMNS,
+    BUYING_GROUP_COLUMNS,
+    CIP_COLUMNS,
+    INVENTORY_COLUMNS,
+    LOOKUP_COLUMNS,
+    OPEN_ORDER_COLUMNS,
+    ORDERBOOK_COLUMNS,
+    SALES_SUMMARY_COLUMNS,
+    SALES_TREND_COLUMNS,
+)
+from modules.utils import normalize_identifier_key, normalize_ndc_key, normalize_text_key
+
+
+@dataclass(frozen=True)
+class JoinStrategy:
+    left_keys: tuple[str, ...]
+    right_keys: tuple[str, ...]
+    key_modes: tuple[str, ...]
+    description: str
+
+
+@dataclass(frozen=True)
+class SourceSpec:
+    source_name: str
+    source_file: str
+    dataframe_key: str
+    preferred_columns: tuple[str, ...]
+    strategies: tuple[JoinStrategy, ...]
+
+
+@dataclass(frozen=True)
+class MergeAuditRow:
+    source_file: str
+    columns_added: str
+    join_key: str
+    rows_updated: int
+    rows_missing: int
+    duplicate_keys_found: int
+    comments: str
+
+
+@dataclass(frozen=True)
+class MasterBuildResult:
+    master_df: pd.DataFrame
+    merge_audit_df: pd.DataFrame
+    statistics_df: pd.DataFrame
+
+
+SOURCE_SPECS: tuple[SourceSpec, ...] = (
+    SourceSpec(
+        source_name="MOQ",
+        source_file="Mat_Desc,_MOQ_,_Material_#.xlsx",
+        dataframe_key="moq",
+        preferred_columns=(
+            LOOKUP_COLUMNS["material_description"],
+            LOOKUP_COLUMNS["pack_size_moq"],
+            LOOKUP_COLUMNS["material_code"],
+            LOOKUP_COLUMNS["ndc_code"],
+        ),
+        strategies=(
+            JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (LOOKUP_COLUMNS["ndc_code"],), ("ndc",), "NDC Code"),
+            JoinStrategy((LOOKUP_COLUMNS["material_code"],), (LOOKUP_COLUMNS["material_code"],), ("alnum",), "Material Number"),
+        ),
+    ),
+    SourceSpec(
+        source_name="Inventory",
+        source_file="07-30_inv.xlsx",
+        dataframe_key="inventory",
+        preferred_columns=(
+            INVENTORY_COLUMNS["actual_quantity"],
+            INVENTORY_COLUMNS["inventory"],
+            INVENTORY_COLUMNS["allocated_quantity"],
+            INVENTORY_COLUMNS["description"],
+            INVENTORY_COLUMNS["sku"],
+        ),
+        strategies=(
+            JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (INVENTORY_COLUMNS["ndc"],), ("ndc",), "NDC Code"),
+            JoinStrategy((LOOKUP_COLUMNS["material_code"],), (INVENTORY_COLUMNS["sku"],), ("alnum",), "Material Number to SKU"),
+        ),
+    ),
+    SourceSpec(
+        source_name="Open Order Summary",
+        source_file="Open_Order_Summary.xlsx",
+        dataframe_key="open_orders",
+        preferred_columns=(
+            OPEN_ORDER_COLUMNS["total"],
+            OPEN_ORDER_COLUMNS["sku"],
+            OPEN_ORDER_COLUMNS["im_sku_desc"],
+            OPEN_ORDER_COLUMNS["ph_soldto_name"],
+        ),
+        strategies=(
+            JoinStrategy(("Lookup",), ("Lookup",), ("lookup",), "Lookup"),
+            JoinStrategy((ORDERBOOK_COLUMNS["sold_to_party_name"],), (OPEN_ORDER_COLUMNS["ph_soldto_name"],), ("text",), "Sold To Party Name"),
+            JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (OPEN_ORDER_COLUMNS["sku"],), ("ndc",), "NDC Code to SKU"),
+        ),
+    ),
+    SourceSpec(
+        source_name="Sales Summary",
+        source_file="sales_summ.xlsx",
+        dataframe_key="sales_summary",
+        preferred_columns=(
+            SALES_SUMMARY_COLUMNS["sales_order_qty"],
+            SALES_SUMMARY_COLUMNS["sales_qty_mtd"],
+            SALES_SUMMARY_COLUMNS["forecast_qty"],
+            SALES_SUMMARY_COLUMNS["material_description"],
+            SALES_SUMMARY_COLUMNS["pack_size"],
+            SALES_SUMMARY_COLUMNS["lookup"],
+            SALES_SUMMARY_COLUMNS["ndc_code"],
+            SALES_SUMMARY_COLUMNS["sold_to_party_name"],
+        ),
+        strategies=(
+            JoinStrategy(("Lookup",), (SALES_SUMMARY_COLUMNS["lookup"],), ("lookup",), "Lookup"),
+            JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (SALES_SUMMARY_COLUMNS["ndc_code"],), ("ndc",), "NDC Code"),
+            JoinStrategy((ORDERBOOK_COLUMNS["sold_to_party_name"],), (SALES_SUMMARY_COLUMNS["sold_to_party_name"],), ("text",), "Sold To Party Name"),
+        ),
+    ),
+    SourceSpec(
+        source_name="Sales Trend",
+        source_file="Strend.xlsx",
+        dataframe_key="sales_trend",
+        preferred_columns=(
+            SALES_TREND_COLUMNS["material_description"],
+            SALES_TREND_COLUMNS["customer_group"],
+            SALES_TREND_COLUMNS["contract_id"],
+            SALES_TREND_COLUMNS["lookup"],
+            " Jul-26 ",
+            " July'26- Forecast ",
+            " Avg Jan'26 to June'26 ",
+        ),
+        strategies=(
+            JoinStrategy(("Lookup",), (SALES_TREND_COLUMNS["lookup"],), ("lookup",), "Lookup"),
+            JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (SALES_TREND_COLUMNS["ndc_code"],), ("ndc",), "NDC Code"),
+            JoinStrategy((ORDERBOOK_COLUMNS["sold_to_party_name"],), (SALES_TREND_COLUMNS["sold_to_party_name"],), ("text",), "Sold To Party Name"),
+        ),
+    ),
+    SourceSpec(
+        source_name="Buying Groups",
+        source_file="Buying_groups.xlsx",
+        dataframe_key="buying_groups",
+        preferred_columns=(BUYING_GROUP_COLUMNS["buying_group"], BUYING_GROUP_COLUMNS["customer"]),
+        strategies=(
+            JoinStrategy((ORDERBOOK_COLUMNS["sold_to_party_name"],), (BUYING_GROUP_COLUMNS["customer"],), ("text",), "Sold To Party Name to Customer"),
+        ),
+    ),
+    SourceSpec(
+        source_name="Awards",
+        source_file="Awards.xlsx",
+        dataframe_key="awards",
+        preferred_columns=(
+            AWARDS_COLUMNS["award_type"],
+            AWARDS_COLUMNS["description"],
+            AWARDS_COLUMNS["customer"],
+            AWARDS_COLUMNS["sold_to_party"],
+            AWARDS_COLUMNS["lookup"],
+            AWARDS_COLUMNS["ndc"],
+        ),
+        strategies=(
+            JoinStrategy(("Lookup",), (AWARDS_COLUMNS["lookup"],), ("lookup",), "Lookup"),
+            JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (AWARDS_COLUMNS["ndc"],), ("ndc",), "NDC Code"),
+            JoinStrategy((ORDERBOOK_COLUMNS["sold_to_party_name"],), (AWARDS_COLUMNS["customer"],), ("text",), "Sold To Party Name to Customer"),
+        ),
+    ),
+    SourceSpec(
+        source_name="Critical Inventory Tracker",
+        source_file="CIP.xlsx",
+        dataframe_key="critical_inventory_tracker",
+        preferred_columns=(
+            CIP_COLUMNS["comments"],
+            CIP_COLUMNS["customer_eta"],
+            CIP_COLUMNS["description"],
+            CIP_COLUMNS["ndc"],
+        ),
+        strategies=(
+            JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (CIP_COLUMNS["ndc"],), ("ndc",), "NDC Code"),
+        ),
+    ),
+)
+
+
+def build_master_workbook(
+    master_orderbook_df: pd.DataFrame,
+    source_frames: Mapping[str, pd.DataFrame],
+    output_path: Path,
+    *,
+    logger,
+    debug_keep_temp_keys: bool | None = None,
+) -> MasterBuildResult:
+    """Build a master dataframe while preserving original workbook headers."""
+    original_orderbook_columns = list(master_orderbook_df.columns)
+    master_df = master_orderbook_df.copy().drop_duplicates(keep="first")
+    audit_rows: list[MergeAuditRow] = []
+    if debug_keep_temp_keys is None:
+        debug_keep_temp_keys = get_debug_keep_temp_keys_default()
+
+    for spec in SOURCE_SPECS:
+        source_df = source_frames.get(spec.dataframe_key)
+        if source_df is None or source_df.empty:
+            audit_rows.append(
+                MergeAuditRow(
+                    source_file=spec.source_file,
+                    columns_added="",
+                    join_key="",
+                    rows_updated=0,
+                    rows_missing=0,
+                    duplicate_keys_found=0,
+                    comments="Source dataframe missing or empty",
+                )
+            )
+            logger.warning("Skipping %s because source dataframe is missing or empty", spec.source_file)
+            continue
+
+        master_df, audit_row = _merge_source(
+            master_df,
+            source_df,
+            spec,
+            logger,
+            debug_keep_temp_keys=debug_keep_temp_keys,
+        )
+        audit_rows.append(audit_row)
+
+    master_df = _ensure_lookup(master_df)
+    master_df = _preserve_orderbook_column_order(master_df, original_orderbook_columns)
+
+    merge_audit_df = pd.DataFrame(
+        [
+            {
+                "Source File": row.source_file,
+                "Columns Added": row.columns_added,
+                "Join Key": row.join_key,
+                "Rows Updated": row.rows_updated,
+                "Rows Missing": row.rows_missing,
+                "Duplicate Keys Found": row.duplicate_keys_found,
+                "Comments": row.comments,
+            }
+            for row in audit_rows
+        ]
+    )
+    statistics_df = _build_statistics(master_orderbook_df, master_df)
+    _write_validation_workbook(master_df, merge_audit_df, statistics_df, output_path)
+    logger.info("Saved master workbook to %s", output_path)
+    return MasterBuildResult(master_df=master_df, merge_audit_df=merge_audit_df, statistics_df=statistics_df)
+
+
+def _merge_source(
+    master_df: pd.DataFrame,
+    source_df: pd.DataFrame,
+    spec: SourceSpec,
+    logger,
+    *,
+    debug_keep_temp_keys: bool,
+) -> tuple[pd.DataFrame, MergeAuditRow]:
+    strategy = _select_strategy(master_df, source_df, spec.strategies)
+    if strategy is None:
+        return master_df, MergeAuditRow(
+            source_file=spec.source_file,
+            columns_added="",
+            join_key="",
+            rows_updated=0,
+            rows_missing=len(source_df),
+            duplicate_keys_found=0,
+            comments="No compatible join strategy found",
+        )
+
+    payload_columns = [column for column in spec.preferred_columns if column in source_df.columns and column not in strategy.right_keys]
+    selected_columns = list(strategy.right_keys) + payload_columns
+    source_selected = source_df[selected_columns].copy()
+
+    duplicate_keys_found, conflicting_values = _analyze_duplicates(source_selected, strategy.right_keys)
+    source_selected = source_selected.drop_duplicates(subset=list(strategy.right_keys), keep="first")
+
+    rows_missing = _count_source_keys_not_in_master(master_df, source_selected, strategy)
+    (
+        merged_df,
+        columns_added,
+        rows_updated,
+        successful_matches,
+        unmatched_records,
+        values_normalized,
+    ) = _merge_and_upsert(
+        master_df,
+        source_selected,
+        payload_columns,
+        strategy,
+        debug_keep_temp_keys=debug_keep_temp_keys,
+    )
+
+    comments = f"{strategy.description}; conflicting values={conflicting_values}"
+    logger.info(
+        "%s lookup stats | total_rows=%s | values_normalized=%s | successful_matches=%s | unmatched_records=%s | duplicate_lookup_keys=%s",
+        spec.source_file,
+        len(master_df),
+        values_normalized,
+        successful_matches,
+        unmatched_records,
+        duplicate_keys_found,
+    )
+    logger.info(
+        "%s merged using %s | rows updated=%s | rows missing=%s | duplicate keys=%s",
+        spec.source_file,
+        strategy.description,
+        rows_updated,
+        rows_missing,
+        duplicate_keys_found,
+    )
+    return merged_df, MergeAuditRow(
+        source_file=spec.source_file,
+        columns_added=", ".join(columns_added),
+        join_key=", ".join(strategy.left_keys),
+        rows_updated=rows_updated,
+        rows_missing=rows_missing,
+        duplicate_keys_found=duplicate_keys_found,
+        comments=comments,
+    )
+
+
+def _select_strategy(master_df: pd.DataFrame, source_df: pd.DataFrame, strategies: Sequence[JoinStrategy]) -> JoinStrategy | None:
+    for strategy in strategies:
+        if all(column in master_df.columns for column in strategy.left_keys) and all(column in source_df.columns for column in strategy.right_keys):
+            return strategy
+    return None
+
+
+def _count_source_keys_not_in_master(master_df: pd.DataFrame, source_df: pd.DataFrame, strategy: JoinStrategy) -> int:
+    master_key = _compose_key(master_df, strategy.left_keys, strategy.key_modes)
+    source_key = _compose_key(source_df, strategy.right_keys, strategy.key_modes)
+    return len(set(source_key.dropna().astype(str)) - set(master_key.dropna().astype(str)))
+
+
+def _analyze_duplicates(source_df: pd.DataFrame, key_columns: Sequence[str]) -> tuple[int, int]:
+    duplicate_keys_found = int(source_df.duplicated(subset=list(key_columns)).sum())
+    conflicting_values = 0
+    grouped = source_df.groupby(list(key_columns), dropna=False)
+    non_key_columns = [column for column in source_df.columns if column not in key_columns]
+    for _, group in grouped:
+        if len(group) < 2:
+            continue
+        for column in non_key_columns:
+            if group[column].dropna().astype(str).nunique() > 1:
+                conflicting_values += 1
+    return duplicate_keys_found, conflicting_values
+
+
+def _merge_and_upsert(
+    master_df: pd.DataFrame,
+    source_df: pd.DataFrame,
+    payload_columns: Sequence[str],
+    strategy: JoinStrategy,
+    *,
+    debug_keep_temp_keys: bool,
+) -> tuple[pd.DataFrame, list[str], int, int, int, int]:
+    left = master_df.copy()
+    right = source_df.copy()
+
+    left["__merge_key__"] = _compose_key(left, strategy.left_keys, strategy.key_modes)
+    right["__merge_key__"] = _compose_key(right, strategy.right_keys, strategy.key_modes)
+    values_normalized = _normalized_value_count(left, strategy.left_keys, strategy.key_modes) + _normalized_value_count(
+        right, strategy.right_keys, strategy.key_modes
+    )
+    right = right.drop(columns=list(strategy.right_keys), errors="ignore")
+
+    merged = left.merge(right, on="__merge_key__", how="left", suffixes=("", "__tmp"), indicator=True)
+    successful_matches = int((merged["__merge_key__"].notna() & (merged["_merge"] == "both")).sum())
+    unmatched_records = int((merged["__merge_key__"].notna() & (merged["_merge"] != "both")).sum())
+    rows_updated = successful_matches
+    columns_added: list[str] = []
+
+    for column in payload_columns:
+        temp_column = f"{column}__tmp"
+        if temp_column in merged.columns:
+            if column in master_df.columns:
+                merged[column] = merged[column].where(merged[column].notna(), merged[temp_column])
+                merged = merged.drop(columns=[temp_column])
+            else:
+                merged[column] = merged[temp_column]
+                merged = merged.drop(columns=[temp_column])
+                columns_added.append(column)
+        elif column in merged.columns and column not in master_df.columns:
+            columns_added.append(column)
+
+    drop_columns = ["_merge"]
+    if not debug_keep_temp_keys:
+        drop_columns.append("__merge_key__")
+    merged = merged.drop(columns=[column for column in drop_columns if column in merged.columns], errors="ignore")
+    return merged, columns_added, rows_updated, successful_matches, unmatched_records, values_normalized
+
+
+def _compose_key(df: pd.DataFrame, columns: Sequence[str], modes: Sequence[str]) -> pd.Series:
+    if not columns:
+        return pd.Series([pd.NA] * len(df), index=df.index, dtype="string")
+
+    pieces = [_normalize_key(df[column], mode) for column, mode in zip(columns, modes, strict=True)]
+    key = pieces[0].astype("string")
+    for piece in pieces[1:]:
+        key = key.fillna("") + "|" + piece.fillna("")
+    return key.replace("", pd.NA)
+
+
+def _normalize_key(series: pd.Series, mode: str) -> pd.Series:
+    if mode == "ndc":
+        normalized = series.apply(normalize_ndc_key)
+    elif mode == "alnum":
+        normalized = series.apply(normalize_identifier_key)
+    else:
+        normalized = series.apply(normalize_text_key)
+    return pd.Series(normalized, index=series.index, dtype="string").replace("", pd.NA)
+
+
+def _normalized_value_count(df: pd.DataFrame, columns: Sequence[str], modes: Sequence[str]) -> int:
+    changes = 0
+    for column, mode in zip(columns, modes, strict=True):
+        normalized = _normalize_key(df[column], mode)
+        original = df[column].astype("string").str.strip()
+        changed = original.notna() & normalized.notna() & (original != normalized)
+        changes += int(changed.sum())
+    return changes
+
+
+def _ensure_lookup(df: pd.DataFrame) -> pd.DataFrame:
+    working = df.copy()
+    if "Lookup" in working.columns:
+        return working
+    ndc_column = LOOKUP_COLUMNS["ndc_code"]
+    sold_to_column = ORDERBOOK_COLUMNS["sold_to_party_name"]
+    if ndc_column in working.columns and sold_to_column in working.columns:
+        working["Lookup"] = _normalize_key(working[ndc_column], "ndc").fillna("") + _normalize_key(working[sold_to_column], "text").fillna("")
+        working["Lookup"] = working["Lookup"].replace("", pd.NA)
+    else:
+        # TODO: Verify business rule for Lookup when either NDC Code or Sold-to party Name is unavailable.
+        pass
+    return working
+
+
+def get_debug_keep_temp_keys_default() -> bool:
+    """Allow retaining temporary normalized keys when debugging joins."""
+    value = os.getenv("ORDERBOOK_DEBUG_NORMALIZED_KEYS", "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def _preserve_orderbook_column_order(df: pd.DataFrame, original_columns: Sequence[str]) -> pd.DataFrame:
+    ordered = [column for column in original_columns if column in df.columns]
+    ordered.extend(column for column in df.columns if column not in ordered)
+    return df.loc[:, ordered]
+
+
+def _build_statistics(master_orderbook_df: pd.DataFrame, master_df: pd.DataFrame) -> pd.DataFrame:
+    sales_order_col = ORDERBOOK_COLUMNS["sales_order_qty"]
+    customer_col = ORDERBOOK_COLUMNS["sold_to_party_name"]
+    ndc_col = LOOKUP_COLUMNS["ndc_code"]
+    lookup_col = "Lookup"
+
+    stats = {
+        "Original Orderbook Rows": int(len(master_orderbook_df)),
+        "Rows After Merge": int(len(master_df)),
+        "Unique Sales Orders": int(master_df[sales_order_col].nunique(dropna=True)) if sales_order_col in master_df.columns else 0,
+        "Unique Customers": int(master_df[customer_col].nunique(dropna=True)) if customer_col in master_df.columns else 0,
+        "Unique NDCs": int(master_df[ndc_col].nunique(dropna=True)) if ndc_col in master_df.columns else 0,
+        "Duplicate NDCs": int(master_df[ndc_col].duplicated().sum()) if ndc_col in master_df.columns else 0,
+        "Duplicate Lookups": int(master_df[lookup_col].duplicated().sum()) if lookup_col in master_df.columns else 0,
+        "Number of Missing Material Descriptions": _missing_count(master_df, LOOKUP_COLUMNS["material_description"]),
+        "Number of Missing MOQ": _missing_count(master_df, LOOKUP_COLUMNS["pack_size_moq"]),
+        "Number of Missing Inventory": _missing_count(master_df, INVENTORY_COLUMNS["actual_quantity"]),
+        "Number of Missing Buying Groups": _missing_count(master_df, BUYING_GROUP_COLUMNS["buying_group"]),
+        "Number of Missing Awards": _missing_count(master_df, AWARDS_COLUMNS["award_type"]),
+        "Number of Missing Comments": _missing_count(master_df, CIP_COLUMNS["comments"]),
+    }
+
+    completion_candidates = [
+        LOOKUP_COLUMNS["material_description"],
+        LOOKUP_COLUMNS["pack_size_moq"],
+        INVENTORY_COLUMNS["actual_quantity"],
+        BUYING_GROUP_COLUMNS["buying_group"],
+        AWARDS_COLUMNS["award_type"],
+        CIP_COLUMNS["comments"],
+    ]
+    completion_columns = [column for column in completion_candidates if column in master_df.columns]
+    stats["Completion %"] = round(float(master_df[completion_columns].notna().all(axis=1).mean() * 100), 2) if completion_columns else 0.0
+    return pd.DataFrame([stats])
+
+
+def _missing_count(df: pd.DataFrame, column_name: str) -> int:
+    if column_name not in df.columns:
+        return len(df)
+    return int(df[column_name].isna().sum())
+
+
+def _write_validation_workbook(master_df: pd.DataFrame, audit_df: pd.DataFrame, statistics_df: pd.DataFrame, output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        master_df.to_excel(writer, sheet_name="Master_Data", index=False)
+        audit_df.to_excel(writer, sheet_name="Merge_Audit", index=False)
+        statistics_df.to_excel(writer, sheet_name="Statistics", index=False)
+
+    workbook = load_workbook(output_path)
+    for worksheet in workbook.worksheets:
+        _format_sheet(worksheet)
+    workbook.save(output_path)
+
+
+def _format_sheet(worksheet) -> None:
+    worksheet.freeze_panes = "A2"
+    worksheet.auto_filter.ref = worksheet.dimensions
+    for cell in worksheet[1]:
+        cell.font = Font(bold=True)
+    for column_cells in worksheet.columns:
+        max_length = max((len(str(cell.value)) for cell in column_cells if cell.value is not None), default=0)
+        worksheet.column_dimensions[get_column_letter(column_cells[0].column)].width = min(max(max_length + 2, 12), 55)

@@ -1,0 +1,10 @@
+2026-08-01 16:21:25,221 | INFO | Loaded workbook=raw_OB.xlsx sheet=Sheet1 rows=8 cols=27
+2026-08-01 16:21:25,234 | INFO | Loaded workbook=Mat_Desc,_MOQ_,_Material_#.xlsx sheet=Sheet1 rows=4 cols=4
+2026-08-01 16:21:25,250 | INFO | Loaded workbook=07-30_inv.xlsx sheet=Sheet1 rows=16 cols=13
+2026-08-01 16:21:25,267 | INFO | Loaded workbook=Open_Order_Summary.xlsx sheet=Sheet1 rows=5 cols=21
+2026-08-01 16:21:25,299 | INFO | Loaded workbook=Buying_groups.xlsx sheet=Sheet1 rows=677 cols=2
+2026-08-01 16:21:25,322 | INFO | Loaded workbook=Awards.xlsx sheet=Sheet1 rows=129 cols=7
+2026-08-01 16:21:25,334 | INFO | Loaded workbook=CIP.xlsx sheet=Sheet1 rows=10 cols=4
+2026-08-01 16:21:25,346 | INFO | Loaded workbook=sales_summ.xlsx sheet=Sheet1 rows=1 cols=37
+2026-08-01 16:21:25,448 | INFO | Loaded workbook=Strend.xlsx sheet=Sheet1 rows=101 cols=66
+2026-08-01 16:21:25,461 | INFO | Loaded workbook=Headers.xlsx sheet=Sheet1 rows=4 cols=37

@@ -1,0 +1,93 @@
+2026-08-01 12:51:41,612 | INFO | Starting Part 1 orderbook automation workflow
+2026-08-01 12:51:41,909 | INFO | Loaded raw_OB.xlsx from sheet 'Sheet1' with 8 rows and 27 columns
+2026-08-01 12:51:41,915 | INFO | Loaded Mat_Desc,_MOQ_,_Material_#.xlsx from sheet 'Sheet1' with 4 rows and 4 columns
+2026-08-01 12:51:41,927 | INFO | Loaded 07-30_inv.xlsx from sheet 'Sheet1' with 16 rows and 13 columns
+2026-08-01 12:51:41,937 | INFO | Loaded Open_Order_Summary.xlsx from sheet 'Sheet1' with 12 rows and 21 columns
+2026-08-01 12:52:18,442 | INFO | Starting Part 1 orderbook automation workflow
+2026-08-01 12:52:18,616 | INFO | Loaded raw_OB.xlsx from sheet 'Sheet1' with 8 rows and 27 columns
+2026-08-01 12:52:18,621 | INFO | Loaded Mat_Desc,_MOQ_,_Material_#.xlsx from sheet 'Sheet1' with 4 rows and 4 columns
+2026-08-01 12:52:18,629 | INFO | Loaded 07-30_inv.xlsx from sheet 'Sheet1' with 16 rows and 13 columns
+2026-08-01 12:52:18,636 | INFO | Loaded Open_Order_Summary.xlsx from sheet 'Sheet1' with 12 rows and 21 columns
+2026-08-01 12:57:07,518 | INFO | Starting Part 1 orderbook automation workflow
+2026-08-01 12:57:07,834 | INFO | Loaded raw_OB.xlsx from sheet 'Sheet1' with 8 rows and 27 columns
+2026-08-01 12:57:07,840 | INFO | Loaded Mat_Desc,_MOQ_,_Material_#.xlsx from sheet 'Sheet1' with 4 rows and 4 columns
+2026-08-01 12:57:07,852 | INFO | Loaded 07-30_inv.xlsx from sheet 'Sheet1' with 16 rows and 13 columns
+2026-08-01 12:57:07,864 | INFO | Loaded Open_Order_Summary.xlsx from sheet 'Sheet1' with 7 rows and 21 columns
+2026-08-01 12:57:07,952 | INFO | Saved prepared workbook to D:\Jayanth\OrderbookAutomation\output\prepared_orderbook.xlsx
+2026-08-01 12:57:07,953 | INFO | Saved inventory position summary to D:\Jayanth\OrderbookAutomation\output\inventory_position.csv
+2026-08-01 12:57:07,953 | INFO | Part 1 workflow completed successfully
+2026-08-01 13:24:18,957 | INFO | Starting Part 1 orderbook automation workflow
+2026-08-01 13:24:18,971 | INFO | Loaded raw_OB.xlsx from sheet 'Sheet1' with 8 rows and 27 columns
+2026-08-01 13:24:18,979 | INFO | Loaded Mat_Desc,_MOQ_,_Material_#.xlsx from sheet 'Sheet1' with 4 rows and 4 columns
+2026-08-01 13:24:18,998 | INFO | Loaded 07-30_inv.xlsx from sheet 'Sheet1' with 16 rows and 13 columns
+2026-08-01 13:24:19,013 | INFO | Loaded Open_Order_Summary.xlsx from sheet 'Sheet1' with 7 rows and 21 columns
+2026-08-01 13:24:19,193 | WARNING | Mat_Desc,_MOQ_,_Material_#.xlsx: no compatible join strategy found
+2026-08-01 13:24:19,194 | WARNING | 07-30_inv.xlsx: no compatible join strategy found
+2026-08-01 13:24:19,210 | INFO | Open_Order_Summary.xlsx merged | rows updated=4 | rows missing=0 | duplicate keys=3
+2026-08-01 13:24:44,628 | INFO | Starting Part 1 orderbook automation workflow
+2026-08-01 13:24:44,640 | INFO | Loaded raw_OB.xlsx from sheet 'Sheet1' with 8 rows and 27 columns
+2026-08-01 13:24:44,647 | INFO | Loaded Mat_Desc,_MOQ_,_Material_#.xlsx from sheet 'Sheet1' with 4 rows and 4 columns
+2026-08-01 13:24:44,657 | INFO | Loaded 07-30_inv.xlsx from sheet 'Sheet1' with 16 rows and 13 columns
+2026-08-01 13:24:44,668 | INFO | Loaded Open_Order_Summary.xlsx from sheet 'Sheet1' with 7 rows and 21 columns
+2026-08-01 13:24:44,803 | WARNING | Mat_Desc,_MOQ_,_Material_#.xlsx: no compatible join strategy found
+2026-08-01 13:24:44,804 | WARNING | 07-30_inv.xlsx: no compatible join strategy found
+2026-08-01 13:24:44,818 | INFO | Open_Order_Summary.xlsx merged | rows updated=4 | rows missing=0 | duplicate keys=3
+2026-08-01 13:24:44,828 | INFO | sales_summ.xlsx merged | rows updated=1 | rows missing=0 | duplicate keys=0
+2026-08-01 13:24:45,117 | INFO | Strend.xlsx merged | rows updated=60 | rows missing=-7 | duplicate keys=48
+2026-08-01 13:24:45,131 | INFO | Buying_groups.xlsx merged | rows updated=13 | rows missing=0 | duplicate keys=664
+2026-08-01 13:24:45,164 | INFO | Awards.xlsx merged | rows updated=16 | rows missing=0 | duplicate keys=113
+2026-08-01 13:24:45,165 | WARNING | CIP.xlsx: no compatible join strategy found
+2026-08-01 13:25:31,494 | INFO | Starting Part 1 orderbook automation workflow
+2026-08-01 13:25:31,505 | INFO | Loaded raw_OB.xlsx from sheet 'Sheet1' with 8 rows and 27 columns
+2026-08-01 13:25:31,510 | INFO | Loaded Mat_Desc,_MOQ_,_Material_#.xlsx from sheet 'Sheet1' with 4 rows and 4 columns
+2026-08-01 13:25:31,521 | INFO | Loaded 07-30_inv.xlsx from sheet 'Sheet1' with 16 rows and 13 columns
+2026-08-01 13:25:31,530 | INFO | Loaded Open_Order_Summary.xlsx from sheet 'Sheet1' with 7 rows and 21 columns
+2026-08-01 13:25:31,682 | WARNING | Mat_Desc,_MOQ_,_Material_#.xlsx: no compatible join strategy found
+2026-08-01 13:25:31,692 | WARNING | 07-30_inv.xlsx: no compatible join strategy found
+2026-08-01 13:25:31,725 | INFO | Open_Order_Summary.xlsx merged | rows updated=4 | rows missing=0 | duplicate keys=3
+2026-08-01 13:25:31,769 | INFO | sales_summ.xlsx merged | rows updated=1 | rows missing=0 | duplicate keys=0
+2026-08-01 13:25:32,086 | INFO | Strend.xlsx merged | rows updated=60 | rows missing=0 | duplicate keys=48
+2026-08-01 13:25:32,098 | INFO | Buying_groups.xlsx merged | rows updated=13 | rows missing=0 | duplicate keys=664
+2026-08-01 13:25:32,121 | INFO | Awards.xlsx merged | rows updated=16 | rows missing=0 | duplicate keys=113
+2026-08-01 13:25:32,122 | WARNING | CIP.xlsx: no compatible join strategy found
+2026-08-01 13:25:32,558 | INFO | Saved master workbook to D:\Jayanth\OrderbookAutomation\output\Master_Data.xlsx
+2026-08-01 13:25:32,559 | INFO | Saved prepared workbook to D:\Jayanth\OrderbookAutomation\output\prepared_orderbook.xlsx
+2026-08-01 13:25:32,559 | INFO | Saved inventory position summary to D:\Jayanth\OrderbookAutomation\output\inventory_position.csv
+2026-08-01 13:25:32,560 | INFO | Saved master workbook to D:\Jayanth\OrderbookAutomation\output\Master_Data.xlsx
+2026-08-01 13:25:32,560 | INFO | Part 1 workflow completed successfully
+2026-08-01 13:26:23,217 | INFO | Starting Part 1 orderbook automation workflow
+2026-08-01 13:26:23,227 | INFO | Loaded raw_OB.xlsx from sheet 'Sheet1' with 8 rows and 27 columns
+2026-08-01 13:26:23,236 | INFO | Loaded Mat_Desc,_MOQ_,_Material_#.xlsx from sheet 'Sheet1' with 4 rows and 4 columns
+2026-08-01 13:26:23,246 | INFO | Loaded 07-30_inv.xlsx from sheet 'Sheet1' with 16 rows and 13 columns
+2026-08-01 13:26:23,254 | INFO | Loaded Open_Order_Summary.xlsx from sheet 'Sheet1' with 7 rows and 21 columns
+2026-08-01 13:26:23,368 | WARNING | Mat_Desc,_MOQ_,_Material_#.xlsx: no compatible join strategy found
+2026-08-01 13:26:23,369 | WARNING | 07-30_inv.xlsx: no compatible join strategy found
+2026-08-01 13:26:23,381 | INFO | Open_Order_Summary.xlsx merged | rows updated=4 | rows missing=0 | duplicate keys=3
+2026-08-01 13:26:23,392 | INFO | sales_summ.xlsx merged | rows updated=1 | rows missing=0 | duplicate keys=0
+2026-08-01 13:26:23,932 | INFO | Strend.xlsx merged | rows updated=60 | rows missing=0 | duplicate keys=48
+2026-08-01 13:26:23,943 | INFO | Buying_groups.xlsx merged | rows updated=13 | rows missing=0 | duplicate keys=664
+2026-08-01 13:26:23,969 | INFO | Awards.xlsx merged | rows updated=16 | rows missing=0 | duplicate keys=113
+2026-08-01 13:26:23,970 | WARNING | CIP.xlsx: no compatible join strategy found
+2026-08-01 13:26:24,318 | INFO | Saved master workbook to D:\Jayanth\OrderbookAutomation\output\Master_Data.xlsx
+2026-08-01 13:26:24,318 | INFO | Saved prepared workbook to D:\Jayanth\OrderbookAutomation\output\prepared_orderbook.xlsx
+2026-08-01 13:26:24,318 | INFO | Saved inventory position summary to D:\Jayanth\OrderbookAutomation\output\inventory_position.csv
+2026-08-01 13:26:24,318 | INFO | Saved master workbook to D:\Jayanth\OrderbookAutomation\output\Master_Data.xlsx
+2026-08-01 13:26:24,319 | INFO | Part 1 workflow completed successfully
+2026-08-01 13:29:34,556 | INFO | Starting Part 1 orderbook automation workflow
+2026-08-01 13:29:34,566 | INFO | Loaded raw_OB.xlsx from sheet 'Sheet1' with 8 rows and 27 columns
+2026-08-01 13:29:34,573 | INFO | Loaded Mat_Desc,_MOQ_,_Material_#.xlsx from sheet 'Sheet1' with 4 rows and 4 columns
+2026-08-01 13:29:34,585 | INFO | Loaded 07-30_inv.xlsx from sheet 'Sheet1' with 16 rows and 13 columns
+2026-08-01 13:29:34,592 | INFO | Loaded Open_Order_Summary.xlsx from sheet 'Sheet1' with 7 rows and 21 columns
+2026-08-01 13:29:34,724 | WARNING | Mat_Desc,_MOQ_,_Material_#.xlsx: no compatible join strategy found
+2026-08-01 13:29:34,725 | WARNING | 07-30_inv.xlsx: no compatible join strategy found
+2026-08-01 13:29:34,756 | INFO | Open_Order_Summary.xlsx merged | rows updated=4 | rows missing=0 | duplicate keys=3
+2026-08-01 13:29:34,769 | INFO | sales_summ.xlsx merged | rows updated=1 | rows missing=0 | duplicate keys=0
+2026-08-01 13:29:35,137 | INFO | Strend.xlsx merged | rows updated=60 | rows missing=0 | duplicate keys=48
+2026-08-01 13:29:35,147 | INFO | Buying_groups.xlsx merged | rows updated=13 | rows missing=0 | duplicate keys=664
+2026-08-01 13:29:35,172 | INFO | Awards.xlsx merged | rows updated=16 | rows missing=0 | duplicate keys=113
+2026-08-01 13:29:35,174 | WARNING | CIP.xlsx: no compatible join strategy found
+2026-08-01 13:29:35,514 | INFO | Saved master workbook to D:\Jayanth\OrderbookAutomation\output\Master_Data.xlsx
+2026-08-01 13:29:35,514 | INFO | Saved prepared workbook to D:\Jayanth\OrderbookAutomation\output\prepared_orderbook.xlsx
+2026-08-01 13:29:35,514 | INFO | Saved inventory position summary to D:\Jayanth\OrderbookAutomation\output\inventory_position.csv
+2026-08-01 13:29:35,514 | INFO | Saved master workbook to D:\Jayanth\OrderbookAutomation\output\Master_Data.xlsx
+2026-08-01 13:29:35,515 | INFO | Part 1 workflow completed successfully

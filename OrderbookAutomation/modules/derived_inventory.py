@@ -1,0 +1,154 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Sequence
+
+import pandas as pd
+
+from config import INVENTORY_COLUMNS, OPEN_ORDER_COLUMNS, Phase2Config
+from modules.utils import clean_string_value, coerce_numeric_column, normalize_identifier_key
+
+
+@dataclass(frozen=True)
+class DerivedInventoryResult:
+    """Derived UPS inventory dataset and supporting counters."""
+
+    dataframe: pd.DataFrame
+    inventory_rows: int
+    allocated_rows: int
+    unique_ndcs: int
+    missing_inventory: int
+    missing_allocations: int
+
+
+def build_ups_inventory(
+    inventory_df: pd.DataFrame,
+    open_orders_df: pd.DataFrame,
+    phase2_config: Phase2Config,
+    logger,
+) -> DerivedInventoryResult:
+    """Build UPS inventory by netting filtered open order allocations against inventory."""
+    _validate_required_columns(
+        inventory_df,
+        [INVENTORY_COLUMNS["ndc"], INVENTORY_COLUMNS["inventory"]],
+        "inventory",
+    )
+    _validate_required_columns(
+        open_orders_df,
+        [OPEN_ORDER_COLUMNS["sku"], OPEN_ORDER_COLUMNS["total"], OPEN_ORDER_COLUMNS["pickticket_status"]],
+        "open_order_summary",
+    )
+
+    inventory_working = inventory_df.copy()
+    open_orders_working = open_orders_df.copy()
+
+    inventory_ndc_col = INVENTORY_COLUMNS["ndc"]
+    inventory_qty_col = INVENTORY_COLUMNS["inventory"]
+    open_order_sku_col = OPEN_ORDER_COLUMNS["sku"]
+    open_order_total_col = OPEN_ORDER_COLUMNS["total"]
+    open_order_status_col = OPEN_ORDER_COLUMNS["pickticket_status"]
+
+    inventory_working[inventory_ndc_col] = inventory_working[inventory_ndc_col].apply(normalize_identifier_key)
+    inventory_working[inventory_qty_col] = coerce_numeric_column(inventory_working[inventory_qty_col])
+
+    duplicate_inventory_ndc = int(inventory_working[inventory_ndc_col].dropna().duplicated().sum())
+    if duplicate_inventory_ndc > 0:
+        logger.warning("Duplicate inventory NDC values detected: %s", duplicate_inventory_ndc)
+
+    excluded_statuses = {str(status).strip().upper() for status in phase2_config.open_order_excluded_statuses}
+    normalized_status = open_orders_working[open_order_status_col].apply(lambda value: (clean_string_value(value) or "").upper())
+    filtered_open_orders = open_orders_working.loc[~normalized_status.isin(excluded_statuses)].copy()
+
+    missing_sku_mask = filtered_open_orders[open_order_sku_col].isna() | (
+        filtered_open_orders[open_order_sku_col].astype("string").str.strip() == ""
+    )
+    missing_sku_count = int(missing_sku_mask.sum())
+    if missing_sku_count > 0:
+        logger.warning("Missing SKU values in open order summary: %s", missing_sku_count)
+
+    filtered_open_orders["__derived_ndc__"] = filtered_open_orders[open_order_sku_col].apply(
+        lambda value: sku_to_ndc(value, phase2_config, logger)
+    )
+    invalid_sku_count = int(filtered_open_orders[open_order_sku_col].notna().sum() - filtered_open_orders["__derived_ndc__"].notna().sum())
+    if invalid_sku_count > 0:
+        logger.warning("Invalid SKU values that could not be converted to NDC: %s", invalid_sku_count)
+
+    filtered_open_orders[open_order_total_col] = coerce_numeric_column(filtered_open_orders[open_order_total_col]).fillna(0)
+    allocation_summary = (
+        filtered_open_orders.dropna(subset=["__derived_ndc__"])
+        .groupby("__derived_ndc__", dropna=False)[open_order_total_col]
+        .sum()
+        .rename("Allocated")
+        .reset_index()
+        .rename(columns={"__derived_ndc__": "NDC"})
+    )
+
+    inventory_summary = (
+        inventory_working.dropna(subset=[inventory_ndc_col])
+        .groupby(inventory_ndc_col, dropna=False)[inventory_qty_col]
+        .sum()
+        .rename("Inventory")
+        .reset_index()
+        .rename(columns={inventory_ndc_col: "NDC"})
+    )
+
+    missing_inventory_keys = sorted(set(allocation_summary["NDC"].dropna()) - set(inventory_summary["NDC"].dropna()))
+    if missing_inventory_keys:
+        logger.warning("Missing inventory for allocated NDC values: %s", len(missing_inventory_keys))
+
+    derived = inventory_summary.merge(allocation_summary, on="NDC", how="outer")
+    derived["Inventory"] = coerce_numeric_column(derived["Inventory"]).fillna(0)
+    derived["Allocated"] = coerce_numeric_column(derived["Allocated"]).fillna(0)
+    derived["UPS Inventory"] = derived["Inventory"] - derived["Allocated"]
+    derived = derived[["NDC", "Inventory", "Allocated", "UPS Inventory"]]
+
+    missing_allocations = int((derived["Allocated"] == 0).sum())
+    logger.info(
+        "Derived inventory stats | inventory_rows=%s | allocated_rows=%s | unique_ndcs=%s | missing_inventory=%s | missing_allocations=%s",
+        len(inventory_summary),
+        len(allocation_summary),
+        int(derived["NDC"].nunique(dropna=True)),
+        len(missing_inventory_keys),
+        missing_allocations,
+    )
+
+    return DerivedInventoryResult(
+        dataframe=derived,
+        inventory_rows=len(inventory_summary),
+        allocated_rows=len(allocation_summary),
+        unique_ndcs=int(derived["NDC"].nunique(dropna=True)),
+        missing_inventory=len(missing_inventory_keys),
+        missing_allocations=missing_allocations,
+    )
+
+
+def sku_to_ndc(value: object, phase2_config: Phase2Config, logger) -> str | None:
+    """Convert a SKU value into a normalized NDC using configurable segmentation rules."""
+    cleaned = clean_string_value(value)
+    if cleaned is None:
+        return None
+
+    delimiter = phase2_config.sku_delimiter
+    segments = cleaned.split(delimiter) if delimiter else [cleaned]
+    expected_lengths = tuple(int(width) for width in phase2_config.sku_segment_widths)
+
+    if len(segments) != len(expected_lengths):
+        logger.warning("Invalid SKU format encountered: %s", cleaned)
+        return None
+
+    normalized_segments: list[str] = []
+    for segment, expected_length in zip(segments, expected_lengths, strict=True):
+        segment_value = normalize_identifier_key(segment)
+        if segment_value is None or not segment_value.isdigit() or len(segment_value) != expected_length:
+            logger.warning("Invalid SKU segment encountered: %s", cleaned)
+            return None
+        normalized_segments.append(segment_value)
+
+    return "".join(normalized_segments)
+
+
+def _validate_required_columns(df: pd.DataFrame, required_columns: Sequence[str], dataset_name: str) -> None:
+    """Raise when a required dataset is missing mandatory business columns."""
+    missing = [column for column in required_columns if column not in df.columns]
+    if missing:
+        raise ValueError(f"{dataset_name} dataframe is missing required columns: {', '.join(missing)}")

@@ -1,0 +1,29 @@
+2026-08-13 23:58:17,746 | INFO | Discovery scan | file=07-30_inv.xlsx | sheet=Sheet1 | header_row=0 | header_count=13
+2026-08-13 23:58:17,762 | INFO | Discovery scan | file=Awards.xlsx | sheet=Sheet1 | header_row=0 | header_count=7
+2026-08-13 23:58:17,775 | INFO | Discovery scan | file=Buying_groups.xlsx | sheet=Sheet1 | header_row=0 | header_count=2
+2026-08-13 23:58:17,778 | INFO | Discovery scan | file=CIP.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-13 23:58:17,786 | INFO | Discovery scan | file=Mat_Desc,_MOQ_,_Material_#.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-13 23:58:17,802 | INFO | Discovery scan | file=Open_Order_Summary.xlsx | sheet=Sheet1 | header_row=3 | header_count=21
+2026-08-13 23:58:17,819 | INFO | Discovery scan | file=POB.xlsx | sheet=Sheet1 | header_row=0 | header_count=16
+2026-08-13 23:58:17,835 | INFO | Discovery scan | file=raw_OB.xlsx | sheet=UOB | header_row=0 | header_count=34
+2026-08-13 23:58:17,851 | INFO | Discovery scan | file=sales_summ.xlsx | sheet=Sheet1 | header_row=0 | header_count=37
+2026-08-13 23:58:17,883 | INFO | Discovery scan | file=Strend.xlsx | sheet=Sheet1 | header_row=3 | header_count=66
+2026-08-13 23:58:17,883 | WARNING | Skipping unreadable workbook '~$POB.xlsx': [Errno 13] Permission denied: 'G:\\Support\\orderbook\\Jayanth\\~$POB.xlsx'
+2026-08-13 23:58:17,883 | INFO | Resolved source 'orderbook' (Orderbook) -> file=raw_OB.xlsx | sheet=UOB
+2026-08-13 23:58:17,883 | INFO | Resolved source 'moq' (Material Description / MOQ Master) -> file=Mat_Desc,_MOQ_,_Material_#.xlsx | sheet=Sheet1
+2026-08-13 23:58:17,883 | INFO | Resolved source 'inventory' (Daily Inventory) -> file=07-30_inv.xlsx | sheet=Sheet1
+2026-08-13 23:58:17,883 | INFO | Resolved source 'open_order_summary' (Open Order Summary) -> file=Open_Order_Summary.xlsx | sheet=Sheet1
+2026-08-13 23:58:17,883 | INFO | Resolved source 'buying_groups' (Buying Groups) -> file=Buying_groups.xlsx | sheet=Sheet1
+2026-08-13 23:58:17,883 | INFO | Resolved source 'awards' (Awards) -> file=Awards.xlsx | sheet=Sheet1
+2026-08-13 23:58:17,883 | INFO | Resolved source 'critical_inventory_tracker' (Critical Inventory Tracker (CIP)) -> file=CIP.xlsx | sheet=Sheet1
+2026-08-13 23:58:17,883 | INFO | Resolved source 'sales_summary' (Sales Summary) -> file=sales_summ.xlsx | sheet=Sheet1
+2026-08-13 23:58:17,883 | INFO | Resolved source 'sales_trend' (Sales Trend (Strend)) -> file=Strend.xlsx | sheet=Sheet1
+2026-08-13 23:58:17,924 | INFO | Loaded workbook=raw_OB.xlsx sheet=UOB rows=8 cols=34
+2026-08-13 23:58:17,931 | INFO | Loaded workbook=Mat_Desc,_MOQ_,_Material_#.xlsx sheet=Sheet1 rows=4 cols=4
+2026-08-13 23:58:17,955 | INFO | Loaded workbook=07-30_inv.xlsx sheet=Sheet1 rows=16 cols=13
+2026-08-13 23:58:17,979 | INFO | Loaded workbook=Open_Order_Summary.xlsx sheet=Sheet1 rows=7 cols=21
+2026-08-13 23:58:18,028 | INFO | Loaded workbook=Buying_groups.xlsx sheet=Sheet1 rows=677 cols=2
+2026-08-13 23:58:18,061 | INFO | Loaded workbook=Awards.xlsx sheet=Sheet1 rows=129 cols=7
+2026-08-13 23:58:18,078 | INFO | Loaded workbook=CIP.xlsx sheet=Sheet1 rows=10 cols=4
+2026-08-13 23:58:18,090 | INFO | Loaded workbook=sales_summ.xlsx sheet=Sheet1 rows=1 cols=37
+2026-08-13 23:58:18,277 | INFO | Loaded workbook=Strend.xlsx sheet=Sheet1 rows=101 cols=66
