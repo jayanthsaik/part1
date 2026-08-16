@@ -54,10 +54,10 @@ def validate_loaded_workbooks(config: AppConfig, loaded_workbooks: Dict[str, Wor
         if workbook_data is None:
             issues.append(
                 ValidationIssue(
-                    severity="ERROR",
+                    severity="ERROR" if spec.mandatory else "INFO",
                     workbook=spec.display_name,
                     worksheet="",
-                    issue_type="MISSING_WORKBOOK",
+                    issue_type="MISSING_WORKBOOK" if spec.mandatory else "MISSING_OPTIONAL_WORKBOOK",
                     details=(
                         f"The '{spec.display_name}' source was not loaded. "
                         f"Hint: {spec.filename_hint or 'no additional hint available'}."

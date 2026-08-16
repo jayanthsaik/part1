@@ -87,6 +87,27 @@ def _read_sheet_headers(file_path: Path, sheet_name: str, header_row_index: int)
         workbook.close()
 
 
+def _sheet_has_data_rows(file_path: Path, sheet_name: str, header_row_index: int) -> bool:
+    """Return True if the worksheet has at least one non-empty row after the header row.
+
+    This is a generic, content-based check (not a filename check) used to
+    exclude header-only template/reference worksheets from discovery -- any
+    worksheet whose header row matches a source's required headers but which
+    contains no actual data rows underneath cannot be a real business data
+    source, regardless of what the file happens to be named.
+    """
+    workbook = openpyxl.load_workbook(file_path, data_only=True, read_only=True)
+    try:
+        worksheet = workbook[sheet_name]
+        first_data_row_number = header_row_index + 2
+        for row in worksheet.iter_rows(min_row=first_data_row_number, values_only=True):
+            if any(value is not None and str(value).strip() for value in row):
+                return True
+        return False
+    finally:
+        workbook.close()
+
+
 def discover_sources(
     source_definitions: Dict[str, SourceDefinition],
     input_dir: Path,
@@ -100,11 +121,22 @@ def discover_sources(
     affecting discovery.
     """
     excel_files = sorted(input_dir.glob("*.xlsx"))
-    # "Headers.xlsx" is a header-template reference file (not real business
-    # data) that happens to share identical column headers with other real
-    # exports (e.g. Sales Summary). It must never be treated as a candidate
-    # source, so it is excluded from discovery entirely.
-    excel_files = [file_path for file_path in excel_files if file_path.stem.strip().lower() != "headers"]
+    # Files this application itself generates (see main.py / phase4_manager.py
+    # output filenames) must never be treated as candidate input sources,
+    # even if a stale/previous copy is accidentally left in the input
+    # folder. These are outputs, not inputs, regardless of header shape.
+    generated_output_filenames = {
+        "workbook_profile.xlsx",
+        "derived_data.xlsx",
+        "business_master_data.xlsx",
+        "sales_summary.xlsx",
+        "pob.xlsx",
+    }
+    excel_files = [
+        file_path
+        for file_path in excel_files
+        if file_path.name.strip().lower() not in generated_output_filenames
+    ]
     if not excel_files:
         raise SourceNotFoundError(next(iter(source_definitions.values())), input_dir)
 
@@ -125,6 +157,18 @@ def discover_sources(
             header_row_index = detect_header_row(file_path, sheet_name)
             headers = _read_sheet_headers(file_path, sheet_name, header_row_index)
             if not any(header.strip() for header in headers):
+                continue
+            # Skip header-only template/reference worksheets: a worksheet
+            # whose header row matches but has no actual data rows beneath
+            # it cannot be a real business data source. This is a
+            # content-based check, never a filename check, so it applies
+            # equally regardless of what the workbook happens to be named.
+            if not _sheet_has_data_rows(file_path, sheet_name, header_row_index):
+                logger.info(
+                    "Discovery scan | file=%s | sheet=%s | skipped (no data rows beneath header)",
+                    file_path.name,
+                    sheet_name,
+                )
                 continue
             workbook_sheet_headers.append((file_path, sheet_name, header_row_index, headers))
             logger.info(
@@ -156,6 +200,13 @@ def discover_sources(
             )
 
         if not candidates:
+            if not source.mandatory:
+                logger.warning(
+                    "Optional source '%s' (%s) not found in input folder; skipping (not required for this workflow).",
+                    logical_name,
+                    source.display_name,
+                )
+                continue
             raise SourceNotFoundError(source, input_dir)
 
         if len(candidates) > 1:
@@ -173,6 +224,13 @@ def discover_sources(
                 elif len(preferred) == 0 and len(candidates) == 1:
                     pass
                 else:
+                    if not source.mandatory:
+                        logger.warning(
+                            "Optional source '%s' (%s) is ambiguous (multiple matching sheets); skipping (not required for this workflow).",
+                            logical_name,
+                            source.display_name,
+                        )
+                        continue
                     raise AmbiguousSourceError(source, candidates)
             else:
                 # Multiple distinct files match: this is a genuine business
@@ -193,8 +251,22 @@ def discover_sources(
                     if len(keyword_matches) == 1:
                         candidates = keyword_matches
                     else:
+                        if not source.mandatory:
+                            logger.warning(
+                                "Optional source '%s' (%s) is ambiguous (multiple matching files); skipping (not required for this workflow).",
+                                logical_name,
+                                source.display_name,
+                            )
+                            continue
                         raise AmbiguousSourceError(source, candidates)
                 else:
+                    if not source.mandatory:
+                        logger.warning(
+                            "Optional source '%s' (%s) is ambiguous (multiple matching files); skipping (not required for this workflow).",
+                            logical_name,
+                            source.display_name,
+                        )
+                        continue
                     raise AmbiguousSourceError(source, candidates)
 
         chosen = candidates[0]

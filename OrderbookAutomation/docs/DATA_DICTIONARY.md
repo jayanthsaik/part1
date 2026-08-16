@@ -56,16 +56,16 @@ Generated from Phase 1 workbook ingestion.
 | CIP.xlsx | Sheet1 | Comments | str | 36K wk of 08/17 | 0 | 10 | UNKNOWN | UNKNOWN |
 | CIP.xlsx | Sheet1 | Customer ETA | str | wk 8/17 | 0 | 6 | UNKNOWN | Potential customer/account field |
 
-## Mat_Desc,_MOQ_,_Material_#.xlsx
+## MOQ.xlsx
 
 ### Sheet1
 
 | Workbook | Worksheet | Exact Column Name | Detected Data Type | Sample Value | Null Count | Unique Count | Potential Join Key | Potential Business Meaning |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Mat_Desc,_MOQ_,_Material_#.xlsx | Sheet1 | HANA Material | int64 | 3011903 | 0 | 4 | Material Number | Potential material identifier or description |
-| Mat_Desc,_MOQ_,_Material_#.xlsx | Sheet1 | NDC code | int64 | 64380020101 | 0 | 4 | NDC | Potential National Drug Code field |
-| Mat_Desc,_MOQ_,_Material_#.xlsx | Sheet1 | Material Description | str | AMLO/HCTZ/VALSAR TAB 10/25/320 MG 30 | 0 | 4 | UNKNOWN | Potential material identifier or description |
-| Mat_Desc,_MOQ_,_Material_#.xlsx | Sheet1 | MOQ  | int64 | 24 | 0 | 3 | UNKNOWN | UNKNOWN |
+| MOQ.xlsx | Sheet1 | HANA Material | int64 | 3011903 | 0 | 4 | Material Number | Potential material identifier or description |
+| MOQ.xlsx | Sheet1 | NDC code | int64 | 64380020101 | 0 | 4 | NDC | Potential National Drug Code field |
+| MOQ.xlsx | Sheet1 | Material Description | str | AMLO/HCTZ/VALSAR TAB 10/25/320 MG 30 | 0 | 4 | UNKNOWN | Potential material identifier or description |
+| MOQ.xlsx | Sheet1 | MOQ  | int64 | 24 | 0 | 3 | UNKNOWN | UNKNOWN |
 
 ## Open_Order_Summary.xlsx
 
@@ -135,52 +135,6 @@ Generated from Phase 1 workbook ingestion.
 | raw_OB.xlsx | UOB | DEA Number (Customer Master) | str | PP0220828 | 0 | 3 | UNKNOWN | Potential customer/account field |
 | raw_OB.xlsx | UOB | Req. Delivery Date | datetime64[us] | 2026-08-06 00:00:00 | 0 | 1 | UNKNOWN | Potential date field |
 | raw_OB.xlsx | UOB | SOM Indc. | float64 |  | 8 | 0 | UNKNOWN | Potential National Drug Code field |
-
-## sales_summ.xlsx
-
-### Sheet1
-
-| Workbook | Worksheet | Exact Column Name | Detected Data Type | Sample Value | Null Count | Unique Count | Potential Join Key | Potential Business Meaning |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| sales_summ.xlsx | Sheet1 | Sales Order No. | int64 | 3612002936 | 0 | 1 | Sales Order | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Item No. | int64 | 30 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Lookup | str | 64380020101EXPRESS SCRIPTS | 0 | 1 | Lookup | Potential composite lookup key |
-| sales_summ.xlsx | Sheet1 | Matl._x000d_
-Code | int64 | 3011903 | 0 | 1 | Material Number | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | NDC Code | int64 | 64380020101 | 0 | 1 | NDC | Potential National Drug Code field |
-| sales_summ.xlsx | Sheet1 | Material Description | str | AMLO/HCTZ/VALSAR TAB 10/25/320 MG 30 | 0 | 1 | UNKNOWN | Potential material identifier or description |
-| sales_summ.xlsx | Sheet1 | Total Stock _x000d_
-In-hand | str | 23,061 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | UPS Inventory | str | 21,696 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Pack Size (MOQ) | int64 | 24 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Sales Order Qty | int64 | 72 | 0 | 1 | Sales Order | Potential quantity field |
-| sales_summ.xlsx | Sheet1 | Sales Qty MTD | int64 | 432 | 0 | 1 | UNKNOWN | Potential quantity field |
-| sales_summ.xlsx | Sheet1 | Forecast Qty | int64 | 366 | 0 | 1 | UNKNOWN | Potential quantity field |
-| sales_summ.xlsx | Sheet1 | Sold-to party | int64 | 9700306 | 0 | 1 | Sold-to Party | Potential customer/account field |
-| sales_summ.xlsx | Sheet1 | Sold-to party Name | str | EXPRESS SCRIPTS | 0 | 1 | Customer | Potential customer/account field |
-| sales_summ.xlsx | Sheet1 | Action | float64 |  | 1 | 0 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | S.O. Type | str | ZTRU | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 |  Unit Price  | float64 | 160.06 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 |  Sales Value (FC)  | str | 11,524.32 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | WAC/BG price in EDI | float64 | 160.06 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | PO Number | str | 1036729-2331 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | PO Date | str | 7/28/26 | 0 | 1 | UNKNOWN | Potential date field |
-| sales_summ.xlsx | Sheet1 | Ship-to party | int64 | 9800112 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Ship-to party Name | str | EXPRESS SCRIPTS_BURLINGTON | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Street | str | 2040 ROUTE 130 NORTH | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | City | str | BURLINGTON | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Region | str | New Jersey | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Postal Code | int64 | 8016 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Country | str | US | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Reas. Rej. | str | Y6 | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Reason for Rejection | str | ZUS Y6 Block | 0 | 1 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Material Blk | str | X | 0 | 1 | UNKNOWN | Potential material identifier or description |
-| sales_summ.xlsx | Sheet1 | Floor limit Blk | float64 |  | 1 | 0 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Multiple of MOQ Blk | float64 |  | 1 | 0 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | Expected Price Blk | float64 |  | 1 | 0 | UNKNOWN | UNKNOWN |
-| sales_summ.xlsx | Sheet1 | DEA Number (Customer Master) | str | FE4492738 | 0 | 1 | UNKNOWN | Potential customer/account field |
-| sales_summ.xlsx | Sheet1 | Req. Delivery Date | str | 7/28/26 | 0 | 1 | UNKNOWN | Potential date field |
-| sales_summ.xlsx | Sheet1 | SOM Indc. | float64 |  | 1 | 0 | UNKNOWN | Potential National Drug Code field |
 
 ## Strend.xlsx
 

@@ -6,7 +6,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 paths = [
-    ROOT / 'Headers.xlsx',
     ROOT / 'POB.xlsx',
     ROOT / 'sales_summ.xlsx',
     ROOT / 'Buying_groups.xlsx',

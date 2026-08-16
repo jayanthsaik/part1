@@ -36,6 +36,11 @@ class SourceDefinition:
             byte-for-byte identical header rows (e.g. a real data file and a
             header-only template/reference copy). Never used as the primary
             matching rule -- header content is always checked first.
+        mandatory: When True (default), discovery/validation fail the
+            pipeline if this source cannot be found in the input folder.
+            When False, the source is treated as optional: discovery simply
+            omits it from the resolved set (no error raised), and downstream
+            phases that depend on it must handle its absence gracefully.
     """
 
     logical_name: str
@@ -45,6 +50,7 @@ class SourceDefinition:
     preferred_sheet_names: Sequence[str] = field(default_factory=tuple)
     filename_hint: str = ""
     filename_keywords: Sequence[str] = field(default_factory=tuple)
+    mandatory: bool = True
 
 
 # Logical source registry. Keys match the historical `workbook_specs` keys
@@ -136,12 +142,15 @@ SOURCE_DEFINITIONS: dict[str, SourceDefinition] = {
         required_headers=("Sales Order No.", "NDC Code", "Lookup"),
         optional_headers=("Pack Size (MOQ)", "Sales Order Qty", "Sales Qty MTD", "Forecast Qty"),
         preferred_sheet_names=("Sheet1",),
-        filename_hint="Sales summary export",
-        # "Headers.xlsx" is a header-template reference copy that shares an
-        # identical header row with the real sales summary export. Filename
-        # keywords are used only to break that specific tie, never as the
-        # primary discovery rule.
-        filename_keywords=("sales_summ", "sales summary"),
+        # NOTE: the pipeline actually GENERATES a "Sales Summary" as an
+        # OUTPUT (see Sales_Summary.xlsx in phase4_manager.py) rather than
+        # receiving one as a business input in the current workflow. This
+        # source is therefore optional (mandatory=False): if no matching
+        # workbook is found in the input folder, discovery simply omits it
+        # instead of failing the whole pipeline. Phase 2/3 code paths that
+        # reference this source already tolerate a missing/empty dataframe.
+        filename_hint="Sales summary export (optional; not required for this workflow)",
+        mandatory=False,
     ),
     "sales_trend": SourceDefinition(
         logical_name="sales_trend",

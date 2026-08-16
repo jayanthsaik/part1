@@ -30,11 +30,24 @@ def run_phase2(loaded_workbooks: dict[str, WorkbookData], config: AppConfig, log
     """Generate all Phase 2 derived datasets from Phase 1 loaded workbooks."""
     inventory_df = _get_sheet_dataframe(loaded_workbooks, "inventory")
     open_orders_df = _get_sheet_dataframe(loaded_workbooks, "open_order_summary")
-    sales_summary_df = _get_sheet_dataframe(loaded_workbooks, "sales_summary")
+    # "sales_summary" is an OPTIONAL input source (see source_registry.py):
+    # this pipeline's actual workflow generates a Sales Summary as an
+    # OUTPUT (Sales_Summary.xlsx) rather than receiving one as a business
+    # input. When absent, lookup-key/MOQ validation derived datasets are
+    # produced as empty (but correctly shaped) results instead of failing
+    # the whole run.
+    sales_summary_df = _get_optional_sheet_dataframe(loaded_workbooks, "sales_summary")
 
     inventory_result = build_ups_inventory(inventory_df, open_orders_df, config.phase2, logger)
-    lookup_result = build_lookup_keys(sales_summary_df, logger)
-    moq_result = build_moq_validation(sales_summary_df, logger)
+    if sales_summary_df is not None:
+        lookup_result = build_lookup_keys(sales_summary_df, logger)
+        moq_result = build_moq_validation(sales_summary_df, logger)
+    else:
+        logger.warning(
+            "Optional 'sales_summary' input not found; skipping Lookup Key and MOQ Validation derived datasets for this run."
+        )
+        lookup_result = LookupKeyResult(dataframe=pd.DataFrame(), total_rows=0, values_normalized=0, duplicate_lookup_keys=0)
+        moq_result = MoqValidationResult(dataframe=pd.DataFrame(), failure_count=0)
     statistics_df = _build_statistics(inventory_result, lookup_result, moq_result, execution_time_seconds)
 
     output_path = config.output_dir / config.phase2.derived_workbook_name
@@ -63,6 +76,21 @@ def _get_sheet_dataframe(loaded_workbooks: dict[str, WorkbookData], workbook_key
         raise ValueError(f"Required workbook '{workbook_key}' not found in loaded workbook set")
     if not workbook_data.worksheets:
         raise ValueError(f"Workbook '{workbook_key}' does not contain any worksheets")
+    first_sheet = next(iter(workbook_data.worksheets.values()))
+    return first_sheet.dataframe.copy()
+
+
+def _get_optional_sheet_dataframe(loaded_workbooks: dict[str, WorkbookData], workbook_key: str) -> pd.DataFrame | None:
+    """Return a copy of the first worksheet dataframe for an optional workbook key, or None if absent.
+
+    Unlike ``_get_sheet_dataframe``, this never raises when the workbook is
+    missing -- used for logical sources marked ``mandatory=False`` in
+    ``source_registry.py`` (e.g. "sales_summary", which this pipeline
+    actually generates as an output rather than receiving as an input).
+    """
+    workbook_data = loaded_workbooks.get(workbook_key)
+    if workbook_data is None or not workbook_data.worksheets:
+        return None
     first_sheet = next(iter(workbook_data.worksheets.values()))
     return first_sheet.dataframe.copy()
 

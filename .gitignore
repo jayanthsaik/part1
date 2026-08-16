@@ -1,0 +1,8 @@
+OrderbookAutomation/Input/
+OrderbookAutomation/logs/
+OrderbookAutomation/output/
+
+# Python bytecode cache (any folder, anywhere in the repo)
+__pycache__/
+*.py[cod]
+*$py.class
