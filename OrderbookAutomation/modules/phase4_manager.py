@@ -83,24 +83,39 @@ ORDERBOOK_REFERENCE_COLUMNS: tuple[str, ...] = (
 # preferred wording (e.g. "John" stays "John", not "Avinash/Krishna
 # Comments"; "Avg" stays "Avg", not "Average"). Note the leading space in
 # " Material Description", which matches sampo.xlsx exactly.
-SUMMARY_REFERENCE_COLUMNS: tuple[str, ...] = (
-    " Material Description",
-    "Sold-to party Name",
-    "Lookup",
-    "NDC Code",
-    "Max of UPS Inventory",
-    "Sum of Sales Order Qty",
-    "Max of Sales Qty MTD",
-    "Max of Forecast Qty",
-    "John",
-    "Apr",
-    "May",
-    "Jun",
-    "Avg",
-    "Buying Group",
-    "Award Type",
-    "SC Comments",
-)
+#
+# The three historical month columns are a POSITIONAL TEMPLATE only: the
+# reference workbook always has exactly 3 month columns in this position
+# (oldest -> newest completed month), but the ACTUAL header text must be
+# the dynamically calculated previous-3-months labels for the current
+# reporting period (e.g. "Feb"/"Mar"/"Apr" for a May run), never a fixed
+# "Apr"/"May"/"Jun". See ``_summary_reference_columns`` below, which
+# substitutes the real ``month_labels`` into this template position.
+_SUMMARY_MONTH_SLOT_COUNT = 3
+
+
+def _summary_reference_columns(month_labels: tuple[str, ...]) -> tuple[str, ...]:
+    """Build the exact reference Summary header order, substituting the
+    dynamically-calculated previous-3-months labels (oldest -> newest) into
+    the fixed 3-column month template position. Every other header remains
+    exactly as authored in the reference workbook (sampo.xlsx)."""
+    return (
+        " Material Description",
+        "Sold-to party Name",
+        "Lookup",
+        "NDC Code",
+        "Max of UPS Inventory",
+        "Sum of Sales Order Qty",
+        "Max of Sales Qty MTD",
+        "Max of Forecast Qty",
+        "John",
+        *month_labels,
+        "Avg",
+        "Buying Group",
+        "Award Type",
+        "SC Comments",
+    )
+
 
 
 
@@ -186,27 +201,23 @@ def _to_reference_summary_dataframe(summary_df: pd.DataFrame, month_labels: tupl
 
     This performs display-only renaming (e.g. "Avinash/Krishna Comments" ->
     "John", "Average" -> "Avg"); it does not alter ``summary_df`` itself or
-    any upstream calculation. The reference schema's "Apr"/"May"/"Jun"
-    columns are matched to whichever three previous-month labels were
-    dynamically calculated upstream (no hardcoded month assumption is
-    introduced here beyond aligning by position, which mirrors the
-    reference workbook's fixed 3-column layout).
+    any upstream calculation. The three historical month columns are
+    selected using the actual, dynamically-calculated previous-3-months
+    labels for the current reporting period (e.g. "Feb"/"Mar"/"Apr" for a
+    May run) -- the reference schema's 3-column month slot is a POSITION
+    only, never a fixed "Apr"/"May"/"Jun" calendar assumption. Header text
+    and underlying values both come from the same ``month_labels`` columns
+    already produced upstream by ``historical_sales.py``, so header and
+    data always refer to the same calendar month.
     """
     working = summary_df.rename(columns=SUMMARY_COLUMN_RENAMES).copy()
 
-    # Map the dynamically-calculated previous-3-month labels onto the
-    # reference's fixed "Apr"/"May"/"Jun" column positions, without
-    # assuming any specific calendar months.
-    reference_month_slots = ("Apr", "May", "Jun")
-    for slot, actual_label in zip(reference_month_slots, month_labels):
-        if actual_label != slot and actual_label in working.columns:
-            working[slot] = working[actual_label]
-
-    for column in SUMMARY_REFERENCE_COLUMNS:
+    reference_columns = _summary_reference_columns(month_labels)
+    for column in reference_columns:
         if column not in working.columns:
             working[column] = pd.NA
 
-    return working[list(SUMMARY_REFERENCE_COLUMNS)]
+    return working[list(reference_columns)]
 
 
 def _to_reference_orderbook_dataframe(enriched_df: pd.DataFrame) -> pd.DataFrame:
