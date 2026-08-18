@@ -43,6 +43,7 @@ INVENTORY_COLUMNS = {
     "actual_quantity": "Actual Quantity",
     "allocated_quantity": "Allocated Quantity",
     "inventory": "Inventory",
+    "hold_codes": "Hold Codes",
 }
 
 OPEN_ORDER_COLUMNS = {

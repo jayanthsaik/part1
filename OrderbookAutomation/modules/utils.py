@@ -83,6 +83,17 @@ def clean_string_value(value: object) -> str | None:
     return text or None
 
 
+def is_blank_hold_code(value: object) -> bool:
+    """Return True when a Hold Codes value must be treated as blank.
+
+    Centralized helper for the UPS Inventory Hold Codes eligibility rule.
+    Treats as blank: actual Excel blank/None/NaN, empty string, and
+    whitespace-only strings (including tabs/newlines with no real content).
+    Any other, non-blank text (e.g. "HOLD", "QC", "DAMAGED") is NOT blank.
+    """
+    return clean_string_value(value) is None
+
+
 def normalize_text_key(value: object) -> str | None:
     """Normalize a text key for resilient, case-insensitive lookup joins."""
     cleaned = clean_string_value(value)

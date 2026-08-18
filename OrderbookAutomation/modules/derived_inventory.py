@@ -6,7 +6,7 @@ from typing import Sequence
 import pandas as pd
 
 from config import INVENTORY_COLUMNS, OPEN_ORDER_COLUMNS, Phase2Config
-from modules.utils import clean_string_value, coerce_numeric_column, normalize_identifier_key
+from modules.utils import clean_string_value, coerce_numeric_column, is_blank_hold_code, normalize_identifier_key
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,13 @@ class DerivedInventoryResult:
     unique_ndcs: int
     missing_inventory: int
     missing_allocations: int
+    total_inventory_rows: int = 0
+    blank_hold_code_rows: int = 0
+    excluded_hold_code_rows: int = 0
+    unique_ndcs_before_filter: int = 0
+    unique_ndcs_after_filter: int = 0
+    inventory_qty_before_filter: float = 0.0
+    inventory_qty_after_filter: float = 0.0
 
 
 def build_ups_inventory(
@@ -54,6 +61,46 @@ def build_ups_inventory(
     duplicate_inventory_ndc = int(inventory_working[inventory_ndc_col].dropna().duplicated().sum())
     if duplicate_inventory_ndc > 0:
         logger.warning("Duplicate inventory NDC values detected: %s", duplicate_inventory_ndc)
+
+    # ---- Hold Codes eligibility filter (BUSINESS RULE) --------------------
+    # ONLY Daily Inventory rows with a BLANK Hold Codes value are eligible
+    # to contribute to the UPS Inventory calculation. This filter is applied
+    # here, before the inventory summary/netting logic, and does NOT touch
+    # the Orderbook or Open Order Summary in any way. The original Hold
+    # Codes column is never modified; only a temporary boolean mask is used.
+    total_inventory_rows = len(inventory_working)
+    unique_ndcs_before_filter = int(inventory_working[inventory_ndc_col].dropna().nunique())
+    inventory_qty_before_filter = float(inventory_working[inventory_qty_col].fillna(0).sum())
+
+    hold_codes_col = INVENTORY_COLUMNS.get("hold_codes")
+    if hold_codes_col and hold_codes_col in inventory_working.columns:
+        blank_hold_code_mask = inventory_working[hold_codes_col].apply(is_blank_hold_code)
+        blank_hold_code_rows = int(blank_hold_code_mask.sum())
+        excluded_hold_code_rows = total_inventory_rows - blank_hold_code_rows
+        inventory_working = inventory_working.loc[blank_hold_code_mask].copy()
+    else:
+        logger.warning(
+            "Inventory source missing '%s' column; Hold Codes filter skipped, all rows treated as eligible",
+            hold_codes_col,
+        )
+        blank_hold_code_rows = total_inventory_rows
+        excluded_hold_code_rows = 0
+
+    unique_ndcs_after_filter = int(inventory_working[inventory_ndc_col].dropna().nunique())
+    inventory_qty_after_filter = float(inventory_working[inventory_qty_col].fillna(0).sum())
+
+    logger.info(
+        "UPS Inventory Hold Code Filter | total_inventory_rows=%s | blank_hold_codes=%s | "
+        "excluded_hold_codes=%s | unique_ndcs_before=%s | unique_ndcs_after=%s | "
+        "inventory_before_filter=%s | inventory_after_filter=%s",
+        total_inventory_rows,
+        blank_hold_code_rows,
+        excluded_hold_code_rows,
+        unique_ndcs_before_filter,
+        unique_ndcs_after_filter,
+        inventory_qty_before_filter,
+        inventory_qty_after_filter,
+    )
 
     excluded_statuses = {str(status).strip().upper() for status in phase2_config.open_order_excluded_statuses}
     normalized_status = open_orders_working[open_order_status_col].apply(lambda value: (clean_string_value(value) or "").upper())
@@ -119,6 +166,13 @@ def build_ups_inventory(
         unique_ndcs=int(derived["NDC"].nunique(dropna=True)),
         missing_inventory=len(missing_inventory_keys),
         missing_allocations=missing_allocations,
+        total_inventory_rows=total_inventory_rows,
+        blank_hold_code_rows=blank_hold_code_rows,
+        excluded_hold_code_rows=excluded_hold_code_rows,
+        unique_ndcs_before_filter=unique_ndcs_before_filter,
+        unique_ndcs_after_filter=unique_ndcs_after_filter,
+        inventory_qty_before_filter=inventory_qty_before_filter,
+        inventory_qty_after_filter=inventory_qty_after_filter,
     )
 
 
