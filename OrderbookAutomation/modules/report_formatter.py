@@ -131,6 +131,7 @@ def apply_business_rule_formatting(
     hold_column: str | None = "Action",
     sales_order_qty_column: str = "Sales Order Qty",
     pack_size_column: str = "Pack Size (MOQ)",
+    ups_inventory_column: str = "UPS Inventory",
 ) -> None:
     """Apply the documented Part E color-coding rules to a written worksheet.
 
@@ -161,18 +162,13 @@ def apply_business_rule_formatting(
     MOQ Issue rule (per the documented manual process): when
     ``Sales Order Qty`` is not an exact multiple of ``Pack Size (MOQ)``
     (computed directly from those two worksheet cells, header-driven --
-    never a hardcoded column letter), the ENTIRE row is filled yellow --
-    the same yellow used for Low_UPS_Inventory, but this is a SEPARATE,
-    independent rule; the two are evaluated independently and either one
-    (or both) can cause a row to be yellow. Unlike Low_UPS_Inventory, the
-    MOQ Issue state is derived from ``Sales Order Qty``/``Pack Size (MOQ)``
-    values that remain on the final Orderbook row (there is no separate
-    temporary calculation column written to this worksheet to clear), so
-    the flag and the resulting yellow fill are stable and do not depend on
-    any later mutation of UPS Inventory or any other cell. Blank/zero/
-    non-numeric Pack Size or Sales Order Qty are handled safely: no
-    highlight, no error. Controlled Product (pink) still takes precedence
-    over any yellow, matching the existing Low_UPS_Inventory precedence.
+    never a hardcoded column letter), the ENTIRE row is filled yellow.
+    
+    Low UPS Inventory rule: when UPS Inventory < 10,000, only the UPS
+    Inventory cell itself is filled yellow (not the entire row). This is
+    independent of the MOQ Issue rule. Blank/zero/non-numeric Pack Size
+    or Sales Order Qty are handled safely: no highlight, no error.
+    Controlled Product (pink) still takes precedence over any yellow.
     """
     header_to_column_index = {str(cell.value): cell.column for cell in worksheet[1]}
 
@@ -185,6 +181,7 @@ def apply_business_rule_formatting(
     hold_idx = header_to_column_index.get(hold_column) if hold_column else None
     sales_order_qty_idx = header_to_column_index.get(sales_order_qty_column)
     pack_size_idx = header_to_column_index.get(pack_size_column)
+    ups_inventory_idx = header_to_column_index.get(ups_inventory_column)
 
     df_row_values = df.reset_index(drop=True)
 
@@ -216,15 +213,20 @@ def apply_business_rule_formatting(
             pack_size_value = worksheet.cell(row=row_number, column=pack_size_idx).value
             is_moq_issue = _is_moq_issue(sales_order_qty_value, pack_size_value)
 
+        # Apply whole-row fills for Controlled Product or MOQ Issue
         row_fill = None
         if is_controlled:
             row_fill = FILL_CONTROLLED_PRODUCT_PINK
-        elif is_low_inventory or is_moq_issue:
+        elif is_moq_issue:
             row_fill = FILL_LOW_INVENTORY_YELLOW
 
         if row_fill is not None:
             for column_index in range(1, worksheet.max_column + 1):
                 worksheet.cell(row=row_number, column=column_index).fill = row_fill
+
+        # Apply cell-specific yellow fill for Low UPS Inventory (only the UPS Inventory cell)
+        if is_low_inventory and ups_inventory_idx is not None:
+            worksheet.cell(row=row_number, column=ups_inventory_idx).fill = FILL_LOW_INVENTORY_YELLOW
 
         if is_price_issue:
             for column_index in price_col_indexes:

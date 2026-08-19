@@ -17,8 +17,8 @@ Business rule under test:
   not depend on any later UPS Inventory value.
 - Blank/zero/non-numeric Pack Size or Sales Order Qty -> no highlight,
   no error.
-- Independent of, but shares the same yellow with, the existing
-  Low_UPS_Inventory whole-row rule -- either one can cause yellow.
+- Independent of the Low_UPS_Inventory rule (which highlights only the
+  UPS Inventory cell itself when < 10,000, not the entire row).
 - Controlled Product (pink), Price Issue (orange), Cancel (red), and
   Hold (blue) rules remain unchanged.
 """
@@ -194,12 +194,23 @@ class TestMoqWholeRowHighlight(unittest.TestCase):
 
     def test_low_ups_inventory_still_works_independently(self):
         # No MOQ issue (48/24 exact), but Low_UPS_Inventory flag True.
+        # Only the UPS Inventory cell should be yellow, not the entire row.
         worksheet, df = _build_sheet([_row(48, 24)], low_ups_inventory_flags=[True])
         header = {str(c.value): c.column for c in worksheet[1]}
+        ups_inventory_idx = header["UPS Inventory"]
+        
+        # UPS Inventory cell should be yellow
+        self.assertEqual(_fill_rgb(worksheet.cell(row=2, column=ups_inventory_idx)), FILL_LOW_INVENTORY_YELLOW.fgColor.rgb)
+        
+        # All other cells should NOT be yellow
         for name, idx in header.items():
-            self.assertEqual(_fill_rgb(worksheet.cell(row=2, column=idx)), FILL_LOW_INVENTORY_YELLOW.fgColor.rgb, name)
+            if name != "UPS Inventory":
+                self.assertIsNone(_fill_rgb(worksheet.cell(row=2, column=idx)), f"'{name}' should not be yellow")
 
     def test_moq_and_low_ups_inventory_both_true_still_yellow(self):
+        # When both MOQ issue (75/24) and Low_UPS_Inventory are true:
+        # - Entire row should be yellow (from MOQ issue)
+        # - UPS Inventory cell also yellow (from Low_UPS_Inventory)
         worksheet, df = _build_sheet([_row(75, 24)], low_ups_inventory_flags=[True])
         header = {str(c.value): c.column for c in worksheet[1]}
         for name, idx in header.items():
