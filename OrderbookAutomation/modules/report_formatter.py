@@ -17,6 +17,42 @@ FILL_LOW_INVENTORY_YELLOW = PatternFill(start_color="FFFF00", end_color="FFFF00"
 FILL_CANCEL_RED = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
 FILL_HOLD_BLUE = PatternFill(start_color="ADD8E6", end_color="ADD8E6", fill_type="solid")
 
+_MOQ_TOLERANCE = 1e-9
+
+
+def _is_moq_issue(sales_order_qty: object, pack_size: object) -> bool:
+    """Return True when Sales Order Qty is not an exact multiple of Pack
+    Size (MOQ), per the documented manual process: "divide Sales Order
+    Quantity by Pack Size (MOQ). Any lines with a number after the decimal
+    point are not in MOQ."
+
+    Computed directly from the final Orderbook row's own worksheet cell
+    values (never from the optional Phase 2 sales_summary source). Safe
+    for blank/zero/non-numeric inputs (returns False, never raises). Uses
+    a small floating-point tolerance so a mathematically exact multiple
+    (e.g. 72 / 24 = 3.0) is never falsely flagged due to float noise.
+    """
+    try:
+        if sales_order_qty is None or pack_size is None:
+            return False
+        qty = float(sales_order_qty)
+        size = float(pack_size)
+    except (TypeError, ValueError):
+        return False
+
+    if pd.isna(qty) or pd.isna(size):
+        return False
+    if size == 0:
+        return False
+
+    remainder = qty % size
+    # Treat remainders within tolerance of 0 OR of the full pack size
+    # (floating point can produce e.g. 23.999999999997 instead of 0) as
+    # an exact multiple, not an MOQ issue.
+    if remainder <= _MOQ_TOLERANCE or (size - remainder) <= _MOQ_TOLERANCE:
+        return False
+    return True
+
 
 def _sanitize_for_excel(df: pd.DataFrame) -> pd.DataFrame:
     """Return a copy of ``df`` with pandas NA/NaT/NaN and numpy scalar types replaced by
@@ -93,12 +129,18 @@ def apply_business_rule_formatting(
     price_columns: Sequence[str] = ("Unit Price", "WAC/BG price in EDI"),
     cancel_column: str | None = "Action",
     hold_column: str | None = "Action",
+    sales_order_qty_column: str = "Sales Order Qty",
+    pack_size_column: str = "Pack Size (MOQ)",
 ) -> None:
     """Apply the documented Part E color-coding rules to a written worksheet.
 
     Formatting is applied strictly after business-rule flags have already
     been computed (Part B); this function never computes new business
-    conditions, it only reads existing flag values.
+    conditions, it only reads existing flag values -- EXCEPT for the MOQ
+    Issue whole-row highlight below, which is computed directly from the
+    written worksheet's ``Sales Order Qty`` / ``Pack Size (MOQ)`` cells (a
+    final-Orderbook-only formatting enhancement, independent of the
+    optional Phase 2 sales_summary source).
 
     ``df`` is the internal working dataframe (e.g. ``enriched_df``) that
     still contains the internal flag columns (Controlled_Product,
@@ -115,6 +157,22 @@ def apply_business_rule_formatting(
     Issue keeps its pink row fill, except the specific price cells are
     overwritten with orange to highlight the pricing problem within an
     otherwise-pink controlled-product row.
+
+    MOQ Issue rule (per the documented manual process): when
+    ``Sales Order Qty`` is not an exact multiple of ``Pack Size (MOQ)``
+    (computed directly from those two worksheet cells, header-driven --
+    never a hardcoded column letter), the ENTIRE row is filled yellow --
+    the same yellow used for Low_UPS_Inventory, but this is a SEPARATE,
+    independent rule; the two are evaluated independently and either one
+    (or both) can cause a row to be yellow. Unlike Low_UPS_Inventory, the
+    MOQ Issue state is derived from ``Sales Order Qty``/``Pack Size (MOQ)``
+    values that remain on the final Orderbook row (there is no separate
+    temporary calculation column written to this worksheet to clear), so
+    the flag and the resulting yellow fill are stable and do not depend on
+    any later mutation of UPS Inventory or any other cell. Blank/zero/
+    non-numeric Pack Size or Sales Order Qty are handled safely: no
+    highlight, no error. Controlled Product (pink) still takes precedence
+    over any yellow, matching the existing Low_UPS_Inventory precedence.
     """
     header_to_column_index = {str(cell.value): cell.column for cell in worksheet[1]}
 
@@ -125,6 +183,8 @@ def apply_business_rule_formatting(
     price_col_indexes = [header_to_column_index[column] for column in price_columns if column in header_to_column_index]
     cancel_idx = header_to_column_index.get(cancel_column) if cancel_column else None
     hold_idx = header_to_column_index.get(hold_column) if hold_column else None
+    sales_order_qty_idx = header_to_column_index.get(sales_order_qty_column)
+    pack_size_idx = header_to_column_index.get(pack_size_column)
 
     df_row_values = df.reset_index(drop=True)
 
@@ -146,10 +206,20 @@ def apply_business_rule_formatting(
             and bool(df_row_values[low_inventory_column].iloc[df_index]) is True
         )
 
+        # MOQ Issue state computed independently, BEFORE any fill decision,
+        # directly from this row's own worksheet cells. This flag does not
+        # depend on -- and is not overwritten by -- any later change to
+        # UPS Inventory or any other cell in the row.
+        is_moq_issue = False
+        if sales_order_qty_idx is not None and pack_size_idx is not None:
+            sales_order_qty_value = worksheet.cell(row=row_number, column=sales_order_qty_idx).value
+            pack_size_value = worksheet.cell(row=row_number, column=pack_size_idx).value
+            is_moq_issue = _is_moq_issue(sales_order_qty_value, pack_size_value)
+
         row_fill = None
         if is_controlled:
             row_fill = FILL_CONTROLLED_PRODUCT_PINK
-        elif is_low_inventory:
+        elif is_low_inventory or is_moq_issue:
             row_fill = FILL_LOW_INVENTORY_YELLOW
 
         if row_fill is not None:
