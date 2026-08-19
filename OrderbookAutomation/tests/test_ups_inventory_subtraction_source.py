@@ -51,6 +51,7 @@ def _phase2_config() -> Phase2Config:
         open_order_excluded_statuses=("CANCELLED",),
         sku_delimiter="-",
         sku_segment_widths=("5", "4"),
+        ndc_segment_widths=("5", "4"),
     )
 
 
@@ -149,7 +150,7 @@ class TestUpsInventorySubtractionSource(unittest.TestCase):
                 )
 
     def test_internal_allocated_column_holds_open_order_total(self):
-        # The derived "Allocated" column is the SUM of Open Order " Total ",
+        # The derived "Total" column is the SUM of Open Order " Total ",
         # never the Daily Inventory "Allocated Quantity" (9,000 here).
         result = build_ups_inventory(
             _inventory(inventory=10_000, allocated_quantity=9_000, actual_quantity=77_777),
@@ -158,9 +159,9 @@ class TestUpsInventorySubtractionSource(unittest.TestCase):
             _logger(),
         )
         row = result.dataframe.loc[result.dataframe["NDC"] == NDC].iloc[0]
-        self.assertEqual(float(row["Allocated"]), 2_000)
+        self.assertEqual(float(row["Total"]), 2_000)
         self.assertEqual(float(row["Inventory"]), 10_000)
-        self.assertEqual(float(row["UPS Inventory"]), float(row["Inventory"]) - float(row["Allocated"]))
+        self.assertEqual(float(row["UPS Inventory"]), float(row["Inventory"]) - float(row["Total"]))
 
     def test_hold_code_rows_excluded_from_inventory_side_only(self):
         # A held row's Inventory must not contribute; the Open Order Total

@@ -172,6 +172,13 @@ class Phase2Config:
     open_order_excluded_statuses: Sequence[str]
     sku_delimiter: str
     sku_segment_widths: Sequence[int]
+    # Target widths of each NDC segment produced from a SKU. A warehouse SKU
+    # such as "64380-161-01" carries a 3-digit product segment, while the
+    # business NDC key is the 11-digit 5-4-2 form ("64380016101"). Each SKU
+    # segment is therefore left zero-padded to the width below before the
+    # segments are concatenated into the NDC join key. Widths must be >= the
+    # corresponding ``sku_segment_widths`` entry.
+    ndc_segment_widths: Sequence[int] = (5, 4, 2)
 
 
 @dataclass(frozen=True)
@@ -245,5 +252,6 @@ def get_default_config() -> AppConfig:
             open_order_excluded_statuses=("Pick Completed", "Loaded"),
             sku_delimiter="-",
             sku_segment_widths=(5, 3, 2),
+            ndc_segment_widths=(5, 4, 2),
         ),
     )

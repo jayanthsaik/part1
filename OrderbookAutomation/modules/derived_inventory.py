@@ -125,7 +125,7 @@ def build_ups_inventory(
         filtered_open_orders.dropna(subset=["__derived_ndc__"])
         .groupby("__derived_ndc__", dropna=False)[open_order_total_col]
         .sum()
-        .rename("Allocated")
+        .rename("Total")
         .reset_index()
         .rename(columns={"__derived_ndc__": "NDC"})
     )
@@ -145,11 +145,11 @@ def build_ups_inventory(
 
     derived = inventory_summary.merge(allocation_summary, on="NDC", how="outer")
     derived["Inventory"] = coerce_numeric_column(derived["Inventory"]).fillna(0)
-    derived["Allocated"] = coerce_numeric_column(derived["Allocated"]).fillna(0)
-    derived["UPS Inventory"] = derived["Inventory"] - derived["Allocated"]
-    derived = derived[["NDC", "Inventory", "Allocated", "UPS Inventory"]]
+    derived["Total"] = coerce_numeric_column(derived["Total"]).fillna(0)
+    derived["UPS Inventory"] = derived["Inventory"] - derived["Total"]
+    derived = derived[["NDC", "Inventory", "Total", "UPS Inventory"]]
 
-    missing_allocations = int((derived["Allocated"] == 0).sum())
+    missing_allocations = int((derived["Total"] == 0).sum())
     logger.info(
         "Derived inventory stats | inventory_rows=%s | allocated_rows=%s | unique_ndcs=%s | missing_inventory=%s | missing_allocations=%s",
         len(inventory_summary),
@@ -177,7 +177,16 @@ def build_ups_inventory(
 
 
 def sku_to_ndc(value: object, phase2_config: Phase2Config, logger) -> str | None:
-    """Convert a SKU value into a normalized NDC using configurable segmentation rules."""
+    """Convert a SKU value into a normalized NDC using configurable segmentation rules.
+
+    A warehouse SKU (e.g. "64380-161-01") is split on the configured delimiter
+    and each segment is validated against ``sku_segment_widths``. Because the
+    business NDC join key is the 11-digit 5-4-2 form, each validated segment is
+    then LEFT ZERO-PADDED to the corresponding ``ndc_segment_widths`` entry
+    before the segments are concatenated. Without this padding a SKU would
+    produce a 10-digit key ("6438016101") that can never match the inventory
+    NDC ("64380016101"), silently leaving open orders unnetted.
+    """
     cleaned = clean_string_value(value)
     if cleaned is None:
         return None
@@ -185,18 +194,24 @@ def sku_to_ndc(value: object, phase2_config: Phase2Config, logger) -> str | None
     delimiter = phase2_config.sku_delimiter
     segments = cleaned.split(delimiter) if delimiter else [cleaned]
     expected_lengths = tuple(int(width) for width in phase2_config.sku_segment_widths)
+    target_lengths = tuple(int(width) for width in phase2_config.ndc_segment_widths)
 
     if len(segments) != len(expected_lengths):
         logger.warning("Invalid SKU format encountered: %s", cleaned)
         return None
 
+    if len(target_lengths) != len(expected_lengths):
+        raise ValueError(
+            "Phase2Config.ndc_segment_widths must define one target width per sku_segment_widths entry"
+        )
+
     normalized_segments: list[str] = []
-    for segment, expected_length in zip(segments, expected_lengths, strict=True):
+    for segment, expected_length, target_length in zip(segments, expected_lengths, target_lengths, strict=True):
         segment_value = normalize_identifier_key(segment)
         if segment_value is None or not segment_value.isdigit() or len(segment_value) != expected_length:
             logger.warning("Invalid SKU segment encountered: %s", cleaned)
             return None
-        normalized_segments.append(segment_value)
+        normalized_segments.append(segment_value.zfill(target_length))
 
     return "".join(normalized_segments)
 

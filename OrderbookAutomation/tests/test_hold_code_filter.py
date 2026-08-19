@@ -40,6 +40,7 @@ def _phase2_config() -> Phase2Config:
         open_order_excluded_statuses=("CANCELLED",),
         sku_delimiter="-",
         sku_segment_widths=("5", "4"),
+        ndc_segment_widths=("5", "4"),
     )
 
 
