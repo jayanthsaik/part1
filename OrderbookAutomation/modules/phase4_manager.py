@@ -85,9 +85,11 @@ ORDERBOOK_REFERENCE_COLUMNS: tuple[str, ...] = (
 # Exact reference headers, in exact reference order, for the final
 # client-facing Summary sheet, per sampo.xlsx. These are authoritative
 # business headers and must NOT be auto-substituted with our internal
-# preferred wording (e.g. "John" stays "John", not "Avinash/Krishna
-# Comments"; "Avg" stays "Avg", not "Average"). Note the leading space in
-# " Material Description", which matches sampo.xlsx exactly.
+# preferred wording (e.g. "Avg" stays "Avg", not "Average"). Note the
+# leading space in " Material Description", which matches sampo.xlsx
+# exactly. The one deliberate deviation from sampo.xlsx is the comments
+# column, which uses the business header "Avinash/Krishna Comments"
+# rather than the sample file's person-specific "John".
 #
 # The three historical month columns are a POSITIONAL TEMPLATE only: the
 # reference workbook always has exactly 3 month columns in this position
@@ -103,7 +105,9 @@ def _summary_reference_columns(month_labels: tuple[str, ...]) -> tuple[str, ...]
     """Build the exact reference Summary header order, substituting the
     dynamically-calculated previous-3-months labels (oldest -> newest) into
     the fixed 3-column month template position. Every other header remains
-    exactly as authored in the reference workbook (sampo.xlsx)."""
+    exactly as authored in the reference workbook (sampo.xlsx), except the
+    comments column, which uses the business header "Avinash/Krishna
+    Comments" instead of sampo.xlsx's person-specific "John"."""
     return (
         " Material Description",
         "Sold-to party Name",
@@ -113,7 +117,7 @@ def _summary_reference_columns(month_labels: tuple[str, ...]) -> tuple[str, ...]
         "Sum of Sales Order Qty",
         "Max of Sales Qty MTD",
         "Max of Forecast Qty",
-        "John",
+        "Avinash/Krishna Comments",
         *month_labels,
         "Avg",
         "Buying Group",
@@ -127,8 +131,13 @@ def _summary_reference_columns(month_labels: tuple[str, ...]) -> tuple[str, ...]
 # Rename map from internal working-column names (used during aggregation)
 # to the exact reference Summary headers. Note the leading space in
 # " Material Description", which matches sampo.xlsx exactly.
+#
+# NOTE: the reference workbook (sampo.xlsx) labels the comments column
+# "John", but that is a person-specific artifact of the sample file. The
+# business column is "Avinash/Krishna Comments", so the client-facing POB
+# Summary sheet now carries that header (no rename). The underlying values
+# were always the Avinash/Krishna Comments values -- only the label changed.
 SUMMARY_COLUMN_RENAMES: dict[str, str] = {
-    "Avinash/Krishna Comments": "John",
     "Average": "Avg",
     "Material Description": " Material Description",
 }
@@ -168,7 +177,7 @@ def _build_summary_dataframe(
     "Average"). This dataframe backs the internal Sales_Summary.xlsx sheets;
     the client-facing POB.xlsx Summary sheet is built separately via
     ``_to_reference_summary_dataframe`` which renames to the exact
-    authoritative reference headers ("John", "Avg") without altering this
+    authoritative reference headers ("Avg") without altering this
     internal dataframe or any upstream business logic.
 
     SOP requirement: after "Max Forecast Qty" include Avinash/Krishna
@@ -205,9 +214,11 @@ def _to_reference_summary_dataframe(summary_df: pd.DataFrame, month_labels: tupl
     """Return a copy of ``summary_df`` renamed/ordered to the exact
     authoritative reference Summary headers (client-facing only).
 
-    This performs display-only renaming (e.g. "Avinash/Krishna Comments" ->
-    "John", "Average" -> "Avg"); it does not alter ``summary_df`` itself or
-    any upstream calculation. The three historical month columns are
+    This performs display-only renaming (e.g. "Average" -> "Avg"); it does
+    not alter ``summary_df`` itself or any upstream calculation. The
+    comments column keeps its business header ("Avinash/Krishna
+    Comments") and is deliberately not renamed to sampo.xlsx's "John".
+    The three historical month columns are
     selected using the actual, dynamically-calculated previous-3-months
     labels for the current reporting period (e.g. "Feb"/"Mar"/"Apr" for a
     May run) -- the reference schema's 3-column month slot is a POSITION

@@ -149,7 +149,7 @@ class TestPobSummaryLowUpsInventoryHighlight(unittest.TestCase):
                 "Sum of Sales Order Qty": [100] * len(values),
                 "Max of Sales Qty MTD": [5] * len(values),
                 "Max of Forecast Qty": [7] * len(values),
-                "John": [""] * len(values),
+                "Avinash/Krishna Comments": [""] * len(values),
                 "Feb": [1] * len(values),
                 "Mar": [2] * len(values),
                 "Apr": [3] * len(values),
