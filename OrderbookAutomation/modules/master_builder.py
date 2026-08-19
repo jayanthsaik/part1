@@ -178,12 +178,20 @@ SOURCE_SPECS: tuple[SourceSpec, ...] = (
 def build_master_workbook(
     master_orderbook_df: pd.DataFrame,
     source_frames: Mapping[str, pd.DataFrame],
-    output_path: Path,
+    output_path: Path | None = None,
     *,
     logger,
     debug_keep_temp_keys: bool | None = None,
 ) -> MasterBuildResult:
-    """Build a master dataframe while preserving original workbook headers."""
+    """Build a master dataframe while preserving original workbook headers.
+
+    ``output_path`` is OPTIONAL and controls ONLY whether the diagnostic
+    Business_Master_Data.xlsx validation workbook is serialized. When it is
+    ``None`` (production mode) the identical master dataframe and every audit
+    dataframe are still computed and returned in ``MasterBuildResult`` -- the
+    caller simply receives them in memory instead of via Excel. No merge,
+    lookup or business rule differs between the two paths.
+    """
     original_orderbook_columns = list(master_orderbook_df.columns)
     master_df = master_orderbook_df.copy().drop_duplicates(keep="first")
     audit_rows: list[MergeAuditRow] = []
@@ -319,16 +327,22 @@ def build_master_workbook(
         ]
     )
     statistics_df = _build_statistics(master_orderbook_df, master_df)
-    _write_validation_workbook(
-        master_df,
-        merge_audit_df,
-        statistics_df,
-        buying_group_result.exceptions_df,
-        buying_group_result.audit_df,
-        award_result.exceptions_df,
-        output_path,
-    )
-    logger.info("Saved master workbook to %s", output_path)
+    # DEBUG-ONLY ARTIFACT. The master dataframe and every audit dataframe are
+    # returned in memory below regardless; writing the validation workbook is
+    # a pure diagnostic side effect that never affects the returned values.
+    if output_path is not None:
+        _write_validation_workbook(
+            master_df,
+            merge_audit_df,
+            statistics_df,
+            buying_group_result.exceptions_df,
+            buying_group_result.audit_df,
+            award_result.exceptions_df,
+            output_path,
+        )
+        logger.info("[DEBUG] Saved master workbook to %s", output_path)
+    else:
+        logger.info("Business Master dataset kept in memory (production mode; no intermediate workbook written)")
     return MasterBuildResult(
         master_df=master_df,
         merge_audit_df=merge_audit_df,

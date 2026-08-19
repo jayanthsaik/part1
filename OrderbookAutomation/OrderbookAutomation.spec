@@ -1,34 +1,32 @@
 # -*- mode: python ; coding: utf-8 -*-
 #
-# PyInstaller spec file for OrderbookAutomation.
+# PyInstaller spec for OrderbookAutomation (PRODUCTION, --onedir).
 #
-# This packages the EXISTING application (main.py) into a standalone,
-# directory-based ("--onedir") Windows executable. No business logic is
-# defined or altered here -- this file only controls how the already-tested
-# Python application is bundled for deployment on business users' machines
-# that do not have Python installed.
+# Packages the EXISTING, already-tested application (main.py) into a
+# standalone Windows executable. No business logic is defined or altered
+# here -- this file only controls bundling.
 #
-# Build with:
-#   pyinstaller OrderbookAutomation.spec
+# Build:   pyinstaller OrderbookAutomation.spec --noconfirm
+# Wrapper: build_exe.bat
 #
-# or via the provided build_exe.bat wrapper.
+# DELIBERATELY NOT BUNDLED:
+#   * client input Excel workbooks  -> stay external in input/
+#   * generated output workbooks    -> written externally to output/
+#   * tests/, build/, __pycache__/, .git/, venv/, dev scripts
+# The application resolves input/, output/ and logs/ RELATIVE TO THE EXE
+# at runtime (see modules.utils.get_application_base_dir), so those
+# folders must remain external and writable.
 
-import sys
 from pathlib import Path
 
 block_cipher = None
 
-# The application has no bundled data files of its own (no icons, no
-# templates, no sample Excel workbooks are shipped inside the EXE -- daily
-# input Excel files always remain external in input/, discovered dynamically
-# at runtime by modules.source_discovery).
+# No bundled data files: no icons, no templates, no sample workbooks.
+# Daily inputs are always discovered dynamically at runtime from input/.
 datas = []
 
-# pandas/openpyxl occasionally require explicit hidden-import hints under
-# PyInstaller because some of their submodules are imported lazily/dynamically
-# rather than via static `import` statements PyInstaller's analyzer can see.
-# These are safety-net entries; the application itself does not import them
-# directly.
+# pandas/openpyxl import some submodules lazily/dynamically, which
+# PyInstaller's static analyzer cannot always see. Safety-net hints.
 hiddenimports = [
     "pandas._libs.tslibs.base",
     "pandas._libs.tslibs.timedeltas",
@@ -36,6 +34,17 @@ hiddenimports = [
     "pandas._libs.tslibs.nattype",
     "pandas._libs.window.aggregations",
     "openpyxl.cell._writer",
+]
+
+# Development-only packages must never be pulled into the client build.
+excludes = [
+    "pytest",
+    "_pytest",
+    "tests",
+    "matplotlib",
+    "notebook",
+    "IPython",
+    "tkinter",
 ]
 
 a = Analysis(
@@ -47,7 +56,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=excludes,
     noarchive=False,
     cipher=block_cipher,
 )
@@ -63,13 +72,8 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,
-    # Console retained for the first production build so business users and
-    # support staff can see clear success/error messages directly in the
-    # window while the application is still being validated in the field.
-    # A --noconsole build can be considered later once the EXE is proven
-    # stable (see project deployment notes).
-    console=True,
+    upx=True,
+    console=True,          # business users run this from a console window
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -83,7 +87,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=False,
+    upx=True,
     upx_exclude=[],
     name="OrderbookAutomation",
 )

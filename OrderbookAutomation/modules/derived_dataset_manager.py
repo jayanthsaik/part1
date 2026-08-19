@@ -51,14 +51,21 @@ def run_phase2(loaded_workbooks: dict[str, WorkbookData], config: AppConfig, log
     statistics_df = _build_statistics(inventory_result, lookup_result, moq_result, execution_time_seconds)
 
     output_path = config.output_dir / config.phase2.derived_workbook_name
-    _write_derived_workbook(
-        inventory_result.dataframe,
-        lookup_result.dataframe,
-        moq_result.dataframe,
-        statistics_df,
-        output_path,
-    )
-    logger.info("Wrote Phase 2 derived workbook to %s", output_path)
+    # DEBUG-ONLY ARTIFACT. Every derived dataset above is returned in memory
+    # via Phase2Result and consumed directly by Phase 3/4, so skipping this
+    # write cannot change any business value -- it is a pure diagnostic
+    # side effect. In production only POB.xlsx is written.
+    if getattr(config, "debug_mode", False):
+        _write_derived_workbook(
+            inventory_result.dataframe,
+            lookup_result.dataframe,
+            moq_result.dataframe,
+            statistics_df,
+            output_path,
+        )
+        logger.info("[DEBUG] Wrote Phase 2 derived workbook to %s", output_path)
+    else:
+        logger.info("Phase 2 derived datasets kept in memory (production mode; no intermediate workbook written)")
 
     return Phase2Result(
         ups_inventory_df=inventory_result.dataframe,

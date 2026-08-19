@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -7,6 +8,71 @@ from typing import Dict, Sequence
 
 from modules.source_registry import SOURCE_DEFINITIONS, SourceDefinition
 from modules.utils import get_application_base_dir
+
+
+# ---------------------------------------------------------------------------
+# DEBUG MODE (OUTPUT-ONLY SWITCH)
+# ---------------------------------------------------------------------------
+# PRODUCTION DEFAULT: False.
+#
+# This flag controls OUTPUT ARTIFACTS ONLY. It NEVER changes any business
+# calculation, merge rule, filter, threshold or formatting rule. Every phase
+# performs exactly the same computation in both modes; the only difference is
+# whether the intermediate/diagnostic workbooks and markdown documents are
+# additionally serialized to disk.
+#
+#   DEBUG_MODE = False (production / client EXE)
+#       output/  ->  POB.xlsx ONLY
+#
+#   DEBUG_MODE = True (developer)
+#       output/  ->  POB.xlsx plus Workbook_Profile.xlsx, Derived_Data.xlsx,
+#                    Business_Master_Data.xlsx, Sales_Summary.xlsx
+#       docs/    ->  DATA_DICTIONARY.md, JOIN_KEY_ANALYSIS.md
+#
+# Developers can enable diagnostics WITHOUT editing this file by setting the
+# environment variable ORDERBOOK_DEBUG=1 (also accepts "true"/"yes"/"on").
+DEBUG_MODE: bool = False
+
+_DEBUG_ENV_VAR = "ORDERBOOK_DEBUG"
+_TRUTHY_VALUES = {"1", "true", "yes", "on"}
+
+
+def is_debug_mode() -> bool:
+    """Return True when diagnostic/intermediate outputs should be written.
+
+    Resolution order:
+      1. ``ORDERBOOK_DEBUG`` environment variable, when set (developer
+         override that requires no code edit and no rebuild).
+      2. The ``DEBUG_MODE`` constant above (production default: False).
+
+    OUTPUT-ONLY: callers must use this exclusively to decide whether to
+    SERIALIZE a diagnostic artifact. It must never gate a calculation.
+    """
+    raw_value = os.environ.get(_DEBUG_ENV_VAR)
+    if raw_value is not None and raw_value.strip():
+        return raw_value.strip().lower() in _TRUTHY_VALUES
+    return DEBUG_MODE
+
+
+# The single client-facing business output produced by a production run.
+PRODUCTION_OUTPUT_FILENAME = "POB.xlsx"
+
+# Allow-list of files this application is known to generate inside output/.
+# ONLY these exact filenames may be removed during pre-run cleanup, so any
+# unrelated file a user has placed in output/ is always left untouched.
+APPLICATION_GENERATED_OUTPUT_FILES: tuple[str, ...] = (
+    "POB.xlsx",
+    "Workbook_Profile.xlsx",
+    "Derived_Data.xlsx",
+    "Business_Master_Data.xlsx",
+    "Sales_Summary.xlsx",
+)
+
+# Diagnostic markdown documents written under docs/ in DEBUG mode only.
+APPLICATION_GENERATED_DOC_FILES: tuple[str, ...] = (
+    "DATA_DICTIONARY.md",
+    "JOIN_KEY_ANALYSIS.md",
+)
 
 
 # Backward-compatible business column mappings used by legacy lookup/merge modules.
@@ -199,6 +265,8 @@ class AppConfig:
     source_definitions: Dict[str, SourceDefinition]
     join_key_hints: Dict[str, Sequence[str]]
     phase2: Phase2Config
+    # OUTPUT-ONLY switch (see is_debug_mode above). Never gates a calculation.
+    debug_mode: bool = False
 
 
 def get_default_config() -> AppConfig:
@@ -247,6 +315,7 @@ def get_default_config() -> AppConfig:
         docs_dir=project_root / "docs",
         source_definitions=SOURCE_DEFINITIONS,
         join_key_hints=join_key_hints,
+        debug_mode=is_debug_mode(),
         phase2=Phase2Config(
             derived_workbook_name="Derived_Data.xlsx",
             open_order_excluded_statuses=("Pick Completed", "Loaded"),

@@ -142,7 +142,8 @@ POB_CLIENT_FACING_SHEETS: tuple[str, ...] = ("Orderbook", "Summary")
 
 @dataclass(frozen=True)
 class Phase4Result:
-    sales_summary_path: Path
+    # None in production mode, where the Sales Summary is kept in memory only.
+    sales_summary_path: Optional[Path]
     pob_path: Path
     row_count: int
     reporting_year: int
@@ -392,56 +393,65 @@ def run_phase4(
 
     summary_df = _build_summary_dataframe(aggregated_df, enriched_lookup_df, historical_result.previous_month_labels)
 
-    # ---------------- Sales_Summary.xlsx ----------------
-    sales_summary_workbook = Workbook()
-    sales_summary_ws = write_dataframe_sheet(sales_summary_workbook, "Sales Summary", summary_df)
-    # BUSINESS RULE: the low UPS Inventory yellow highlight lives here, on
-    # the aggregated "Max of UPS Inventory" column, and NOT on the
-    # client-facing POB.xlsx "UPS Inventory" column.
-    low_inventory_highlight_count = apply_low_ups_inventory_formatting(sales_summary_ws)
-    logger.info(
-        "Sales Summary low UPS Inventory highlight | highlighted_cells=%s",
-        low_inventory_highlight_count,
-    )
+    # ---------------- Sales_Summary.xlsx (DEBUG-ONLY ARTIFACT) ----------------
+    # ``summary_df`` is already in memory and is what backs the client-facing
+    # POB "Summary" sheet below, so skipping this workbook cannot change any
+    # business value. In production only POB.xlsx is written.
+    debug_mode = bool(getattr(config, "debug_mode", False))
+    sales_summary_path: Optional[Path] = None
 
-    audit_df = pd.DataFrame(
-        [
-            {
-                "Total Master Rows": int(len(master_df)),
-                "Aggregated Rows": int(len(aggregated_df)),
-                "Unique Lookup Values": aggregation_result.unique_lookup_count,
-                "Duplicate Lookup Values": aggregation_result.duplicate_lookup_count,
-                "Reporting Year": reporting_year,
-                "Reporting Month": reporting_month,
-                "Historical Matches": historical_result.matched_lookup_count,
-                "Historical Misses": historical_result.missing_lookup_count,
-                "Duplicate Historical Keys": historical_result.duplicate_lookup_keys,
-            }
-        ]
-    )
-    write_dataframe_sheet(sales_summary_workbook, "Audit", audit_df)
-
-    # Diagnostics for the dedicated SC Comments lookup. This is an internal
-    # audit sheet on Sales_Summary.xlsx only; the client-facing POB.xlsx
-    # sheet set (POB_CLIENT_FACING_SHEETS) is unchanged.
-    if enrichment_result.sc_comments_exceptions_df is not None and not enrichment_result.sc_comments_exceptions_df.empty:
-        write_dataframe_sheet(
-            sales_summary_workbook,
-            "SC_Comments_Exceptions",
-            enrichment_result.sc_comments_exceptions_df,
+    if debug_mode:
+        sales_summary_workbook = Workbook()
+        sales_summary_ws = write_dataframe_sheet(sales_summary_workbook, "Sales Summary", summary_df)
+        # BUSINESS RULE: the low UPS Inventory yellow highlight lives on the
+        # aggregated "Max of UPS Inventory" column, and NOT on the
+        # client-facing POB.xlsx "Orderbook" sheet's "UPS Inventory" column.
+        low_inventory_highlight_count = apply_low_ups_inventory_formatting(sales_summary_ws)
+        logger.info(
+            "Sales Summary low UPS Inventory highlight | highlighted_cells=%s",
+            low_inventory_highlight_count,
         )
 
-    exceptions_rows = []
-    if historical_result.missing_lookup_count > 0:
-        exceptions_rows.append({"Type": "MISSING_HISTORICAL_SALES", "Count": historical_result.missing_lookup_count})
-    if historical_result.duplicate_lookup_keys > 0:
-        exceptions_rows.append({"Type": "DUPLICATE_HISTORICAL_KEY", "Count": historical_result.duplicate_lookup_keys})
-    exceptions_df = pd.DataFrame(exceptions_rows) if exceptions_rows else pd.DataFrame(columns=["Type", "Count"])
-    write_dataframe_sheet(sales_summary_workbook, "Exceptions", exceptions_df)
+        audit_df = pd.DataFrame(
+            [
+                {
+                    "Total Master Rows": int(len(master_df)),
+                    "Aggregated Rows": int(len(aggregated_df)),
+                    "Unique Lookup Values": aggregation_result.unique_lookup_count,
+                    "Duplicate Lookup Values": aggregation_result.duplicate_lookup_count,
+                    "Reporting Year": reporting_year,
+                    "Reporting Month": reporting_month,
+                    "Historical Matches": historical_result.matched_lookup_count,
+                    "Historical Misses": historical_result.missing_lookup_count,
+                    "Duplicate Historical Keys": historical_result.duplicate_lookup_keys,
+                }
+            ]
+        )
+        write_dataframe_sheet(sales_summary_workbook, "Audit", audit_df)
 
-    sales_summary_path = config.output_dir / "Sales_Summary.xlsx"
-    save_workbook(sales_summary_workbook, sales_summary_path)
-    logger.info("Wrote Sales Summary workbook to %s", sales_summary_path)
+        # Diagnostics for the dedicated SC Comments lookup. This is an internal
+        # audit sheet on Sales_Summary.xlsx only; the client-facing POB.xlsx
+        # sheet set (POB_CLIENT_FACING_SHEETS) is unchanged.
+        if enrichment_result.sc_comments_exceptions_df is not None and not enrichment_result.sc_comments_exceptions_df.empty:
+            write_dataframe_sheet(
+                sales_summary_workbook,
+                "SC_Comments_Exceptions",
+                enrichment_result.sc_comments_exceptions_df,
+            )
+
+        exceptions_rows = []
+        if historical_result.missing_lookup_count > 0:
+            exceptions_rows.append({"Type": "MISSING_HISTORICAL_SALES", "Count": historical_result.missing_lookup_count})
+        if historical_result.duplicate_lookup_keys > 0:
+            exceptions_rows.append({"Type": "DUPLICATE_HISTORICAL_KEY", "Count": historical_result.duplicate_lookup_keys})
+        exceptions_df = pd.DataFrame(exceptions_rows) if exceptions_rows else pd.DataFrame(columns=["Type", "Count"])
+        write_dataframe_sheet(sales_summary_workbook, "Exceptions", exceptions_df)
+
+        sales_summary_path = config.output_dir / "Sales_Summary.xlsx"
+        save_workbook(sales_summary_workbook, sales_summary_path)
+        logger.info("[DEBUG] Wrote Sales Summary workbook to %s", sales_summary_path)
+    else:
+        logger.info("Sales Summary kept in memory (production mode; no intermediate workbook written)")
 
     # ---------------- POB.xlsx (client-facing) ----------------
     # Validate that the final Orderbook preserves the Business Master

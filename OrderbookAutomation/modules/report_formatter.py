@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Sequence
 
@@ -284,9 +285,34 @@ def apply_business_rule_formatting(
 
 
 def save_workbook(workbook: Workbook, output_path: Path) -> None:
+    """Save ``workbook`` ATOMICALLY to ``output_path``.
+
+    The workbook is first written to a temporary file in the same folder and
+    only moved into place once it has been fully serialized. This guarantees a
+    failed/interrupted run can never leave a partial or corrupt business
+    workbook (e.g. a half-written POB.xlsx) that a client might mistake for a
+    valid result: either the complete new file exists, or the path is left as
+    it was.
+
+    ``os.replace`` is atomic on Windows and POSIX for same-volume moves, which
+    is why the temp file is deliberately created alongside the destination
+    rather than in the system temp folder.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if "Sheet" in workbook.sheetnames and len(workbook.sheetnames) > 1:
         default_sheet = workbook["Sheet"]
         if default_sheet.max_row == 1 and default_sheet.max_column == 1 and default_sheet["A1"].value is None:
             workbook.remove(default_sheet)
-    workbook.save(output_path)
+
+    temp_path = output_path.with_name(f"{output_path.stem}.__writing__{output_path.suffix}")
+    try:
+        workbook.save(temp_path)
+        os.replace(temp_path, output_path)
+    except BaseException:
+        # Never leave the partial temp artifact behind on failure.
+        try:
+            if temp_path.exists():
+                temp_path.unlink()
+        except OSError:
+            pass
+        raise

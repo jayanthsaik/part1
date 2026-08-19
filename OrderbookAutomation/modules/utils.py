@@ -34,6 +34,50 @@ def get_application_base_dir() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def clean_generated_outputs(output_dir: Path, allowed_filenames: Iterable[str], logger=None) -> list[str]:
+    """Remove ONLY this application's own previously-generated output files.
+
+    SAFETY CONTRACT -- this function is deliberately conservative:
+
+    * It never deletes a directory, only regular files.
+    * It only ever deletes a file whose EXACT name (case-insensitively)
+      appears in ``allowed_filenames``. Any other file a user happens to
+      keep in ``output/`` is always left untouched.
+    * It never touches ``input/``, ``logs/`` or any path outside
+      ``output_dir`` -- there is no recursion into subfolders.
+
+    This exists so a stale artifact from a previous run (or from an older
+    DEBUG-mode run) can never be mistaken for output of the current run.
+
+    Returns the list of filenames actually removed, for logging/audit.
+    """
+    if not output_dir.exists():
+        return []
+
+    allowed_lower = {str(name).strip().lower() for name in allowed_filenames}
+    removed: list[str] = []
+
+    for entry in sorted(output_dir.iterdir()):
+        if not entry.is_file():
+            continue
+        if entry.name.strip().lower() not in allowed_lower:
+            continue
+        try:
+            entry.unlink()
+            removed.append(entry.name)
+        except OSError as exc:
+            # A locked file (typically open in Excel) must fail loudly rather
+            # than silently leaving a stale workbook behind.
+            raise RuntimeError(
+                f"Could not remove previous output file '{entry.name}'. "
+                f"Close it in Excel and re-run. ({exc})"
+            ) from exc
+
+    if removed and logger is not None:
+        logger.info("Removed stale application-generated output files: %s", ", ".join(removed))
+    return removed
+
+
 def _is_blank_value(value: object) -> bool:
     return clean_string_value(value) is None
 

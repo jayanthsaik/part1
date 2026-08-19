@@ -15,7 +15,7 @@
 
 <div class="node">
   <a name="main.py"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/main.py" type="text/plain"><tt>main.py</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/main.py" type="text/plain"><tt>main.py</tt></a>
 <span class="moduletype">Script</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -319,7 +319,8 @@ imported by:
   <a target="code" href="" type="text/plain"><tt>'matplotlib.axes'</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
 imported by:
-    <a href="#pandas.plotting._misc">pandas.plotting._misc</a>
+    <a href="#pandas.plotting._core">pandas.plotting._core</a>
+ &#8226;   <a href="#pandas.plotting._misc">pandas.plotting._misc</a>
 
   </div>
 
@@ -626,7 +627,7 @@ imported by:
 <div class="node">
   <a name="IPython"></a>
   <a target="code" href="" type="text/plain"><tt>IPython</tt></a>
-<span class="moduletype">MissingModule</span>  <div class="import">
+<span class="moduletype">ExcludedModule</span>  <div class="import">
 imported by:
     <a href="#pandas.io.formats.printing">pandas.io.formats.printing</a>
 
@@ -3021,7 +3022,9 @@ imported by:
  &#8226;   <a href="#doctest">doctest</a>
  &#8226;   <a href="#et_xmlfile.xmlfile">et_xmlfile.xmlfile</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#modules.award_lookup">modules.award_lookup</a>
  &#8226;   <a href="#modules.business_rules">modules.business_rules</a>
+ &#8226;   <a href="#modules.buying_group_lookup">modules.buying_group_lookup</a>
  &#8226;   <a href="#modules.derived_dataset_manager">modules.derived_dataset_manager</a>
  &#8226;   <a href="#modules.derived_inventory">modules.derived_inventory</a>
  &#8226;   <a href="#modules.dictionary_builder">modules.dictionary_builder</a>
@@ -3035,6 +3038,7 @@ imported by:
  &#8226;   <a href="#modules.profiler">modules.profiler</a>
  &#8226;   <a href="#modules.report_formatter">modules.report_formatter</a>
  &#8226;   <a href="#modules.sales_summary_builder">modules.sales_summary_builder</a>
+ &#8226;   <a href="#modules.sc_comments_lookup">modules.sc_comments_lookup</a>
  &#8226;   <a href="#modules.source_discovery">modules.source_discovery</a>
  &#8226;   <a href="#modules.source_registry">modules.source_registry</a>
  &#8226;   <a href="#modules.utils">modules.utils</a>
@@ -6262,13 +6266,14 @@ imported by:
 
 <div class="node">
   <a name="config"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/config.py" type="text/plain"><tt>config</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/config.py" type="text/plain"><tt>config</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
  &#8226;   <a href="#dataclasses">dataclasses</a>
  &#8226;   <a href="#modules.source_registry">modules.source_registry</a>
  &#8226;   <a href="#modules.utils">modules.utils</a>
+ &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#typing">typing</a>
@@ -6571,7 +6576,9 @@ imports:
   <div class="import">
 imported by:
     <a href="#config">config</a>
+ &#8226;   <a href="#modules.award_lookup">modules.award_lookup</a>
  &#8226;   <a href="#modules.business_rules">modules.business_rules</a>
+ &#8226;   <a href="#modules.buying_group_lookup">modules.buying_group_lookup</a>
  &#8226;   <a href="#modules.derived_dataset_manager">modules.derived_dataset_manager</a>
  &#8226;   <a href="#modules.derived_inventory">modules.derived_inventory</a>
  &#8226;   <a href="#modules.final_orderbook_builder">modules.final_orderbook_builder</a>
@@ -6583,6 +6590,7 @@ imported by:
  &#8226;   <a href="#modules.phase4_manager">modules.phase4_manager</a>
  &#8226;   <a href="#modules.profiler">modules.profiler</a>
  &#8226;   <a href="#modules.sales_summary_builder">modules.sales_summary_builder</a>
+ &#8226;   <a href="#modules.sc_comments_lookup">modules.sc_comments_lookup</a>
  &#8226;   <a href="#modules.source_discovery">modules.source_discovery</a>
  &#8226;   <a href="#modules.source_registry">modules.source_registry</a>
  &#8226;   <a href="#modules.validator">modules.validator</a>
@@ -11013,6 +11021,7 @@ imports:
  &#8226;   <a href="#importlib">importlib</a>
  &#8226;   <a href="#importlib._bootstrap">importlib._bootstrap</a>
  &#8226;   <a href="#importlib._bootstrap_external">importlib._bootstrap_external</a>
+ &#8226;   <a href="#importlib.machinery">importlib.machinery</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#warnings">warnings</a>
 
@@ -11151,7 +11160,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#importlib.abc">importlib.abc</a>
+    <a href="#importlib">importlib</a>
+ &#8226;   <a href="#importlib.abc">importlib.abc</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
  &#8226;   <a href="#py_compile">py_compile</a>
@@ -12154,17 +12164,6 @@ imported by:
 </div>
 
 <div class="node">
-  <a name="matplotlib"></a>
-  <a target="code" href="" type="text/plain"><tt>matplotlib</tt></a>
-<span class="moduletype">MissingModule</span>  <div class="import">
-imported by:
-    <a href="#pandas.plotting._core">pandas.plotting._core</a>
-
-  </div>
-
-</div>
-
-<div class="node">
   <a name="mimetypes"></a>
   <a target="code" href="///C:/Python312/Lib/mimetypes.py" type="text/plain"><tt>mimetypes</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -12207,10 +12206,12 @@ imported by:
 
 <div class="node">
   <a name="modules"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/__init__.py" type="text/plain"><tt>modules</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/__init__.py" type="text/plain"><tt>modules</tt></a>
 <span class="moduletype">Package</span>  <div class="import">
 imported by:
-    <a href="#modules.business_rules">modules.business_rules</a>
+    <a href="#modules.award_lookup">modules.award_lookup</a>
+ &#8226;   <a href="#modules.business_rules">modules.business_rules</a>
+ &#8226;   <a href="#modules.buying_group_lookup">modules.buying_group_lookup</a>
  &#8226;   <a href="#modules.derived_dataset_manager">modules.derived_dataset_manager</a>
  &#8226;   <a href="#modules.derived_inventory">modules.derived_inventory</a>
  &#8226;   <a href="#modules.dictionary_builder">modules.dictionary_builder</a>
@@ -12224,6 +12225,7 @@ imported by:
  &#8226;   <a href="#modules.profiler">modules.profiler</a>
  &#8226;   <a href="#modules.report_formatter">modules.report_formatter</a>
  &#8226;   <a href="#modules.sales_summary_builder">modules.sales_summary_builder</a>
+ &#8226;   <a href="#modules.sc_comments_lookup">modules.sc_comments_lookup</a>
  &#8226;   <a href="#modules.source_discovery">modules.source_discovery</a>
  &#8226;   <a href="#modules.source_registry">modules.source_registry</a>
  &#8226;   <a href="#modules.utils">modules.utils</a>
@@ -12235,8 +12237,28 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="modules.award_lookup"></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/award_lookup.py" type="text/plain"><tt>modules.award_lookup</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#modules">modules</a>
+ &#8226;   <a href="#modules.utils">modules.utils</a>
+ &#8226;   <a href="#pandas">pandas</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#modules.master_builder">modules.master_builder</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="modules.business_rules"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/business_rules.py" type="text/plain"><tt>modules.business_rules</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/business_rules.py" type="text/plain"><tt>modules.business_rules</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12251,6 +12273,28 @@ imports:
   <div class="import">
 imported by:
     <a href="#modules.phase4_manager">modules.phase4_manager</a>
+ &#8226;   <a href="#modules.report_formatter">modules.report_formatter</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="modules.buying_group_lookup"></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/buying_group_lookup.py" type="text/plain"><tt>modules.buying_group_lookup</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#modules">modules</a>
+ &#8226;   <a href="#modules.utils">modules.utils</a>
+ &#8226;   <a href="#pandas">pandas</a>
+ &#8226;   <a href="#typing">typing</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#modules.master_builder">modules.master_builder</a>
 
   </div>
 
@@ -12258,7 +12302,7 @@ imported by:
 
 <div class="node">
   <a name="modules.derived_dataset_manager"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/derived_dataset_manager.py" type="text/plain"><tt>modules.derived_dataset_manager</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/derived_dataset_manager.py" type="text/plain"><tt>modules.derived_dataset_manager</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12286,7 +12330,7 @@ imported by:
 
 <div class="node">
   <a name="modules.derived_inventory"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/derived_inventory.py" type="text/plain"><tt>modules.derived_inventory</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/derived_inventory.py" type="text/plain"><tt>modules.derived_inventory</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12308,7 +12352,7 @@ imported by:
 
 <div class="node">
   <a name="modules.dictionary_builder"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/dictionary_builder.py" type="text/plain"><tt>modules.dictionary_builder</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/dictionary_builder.py" type="text/plain"><tt>modules.dictionary_builder</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12328,12 +12372,13 @@ imported by:
 
 <div class="node">
   <a name="modules.final_orderbook_builder"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/final_orderbook_builder.py" type="text/plain"><tt>modules.final_orderbook_builder</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/final_orderbook_builder.py" type="text/plain"><tt>modules.final_orderbook_builder</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
  &#8226;   <a href="#dataclasses">dataclasses</a>
  &#8226;   <a href="#modules">modules</a>
+ &#8226;   <a href="#modules.sc_comments_lookup">modules.sc_comments_lookup</a>
  &#8226;   <a href="#modules.utils">modules.utils</a>
  &#8226;   <a href="#pandas">pandas</a>
  &#8226;   <a href="#typing">typing</a>
@@ -12349,7 +12394,7 @@ imported by:
 
 <div class="node">
   <a name="modules.historical_sales"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/historical_sales.py" type="text/plain"><tt>modules.historical_sales</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/historical_sales.py" type="text/plain"><tt>modules.historical_sales</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12373,7 +12418,7 @@ imported by:
 
 <div class="node">
   <a name="modules.loader"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/loader.py" type="text/plain"><tt>modules.loader</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/loader.py" type="text/plain"><tt>modules.loader</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12402,7 +12447,7 @@ imported by:
 
 <div class="node">
   <a name="modules.lookup_key_builder"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/lookup_key_builder.py" type="text/plain"><tt>modules.lookup_key_builder</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/lookup_key_builder.py" type="text/plain"><tt>modules.lookup_key_builder</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12423,13 +12468,15 @@ imported by:
 
 <div class="node">
   <a name="modules.master_builder"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/master_builder.py" type="text/plain"><tt>modules.master_builder</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/master_builder.py" type="text/plain"><tt>modules.master_builder</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
  &#8226;   <a href="#config">config</a>
  &#8226;   <a href="#dataclasses">dataclasses</a>
  &#8226;   <a href="#modules">modules</a>
+ &#8226;   <a href="#modules.award_lookup">modules.award_lookup</a>
+ &#8226;   <a href="#modules.buying_group_lookup">modules.buying_group_lookup</a>
  &#8226;   <a href="#modules.utils">modules.utils</a>
  &#8226;   <a href="#openpyxl">openpyxl</a>
  &#8226;   <a href="#openpyxl.styles">openpyxl.styles</a>
@@ -12450,7 +12497,7 @@ imported by:
 
 <div class="node">
   <a name="modules.moq_validator"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/moq_validator.py" type="text/plain"><tt>modules.moq_validator</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/moq_validator.py" type="text/plain"><tt>modules.moq_validator</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12471,7 +12518,7 @@ imported by:
 
 <div class="node">
   <a name="modules.phase4_manager"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/phase4_manager.py" type="text/plain"><tt>modules.phase4_manager</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/phase4_manager.py" type="text/plain"><tt>modules.phase4_manager</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12499,7 +12546,7 @@ imported by:
 
 <div class="node">
   <a name="modules.profiler"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/profiler.py" type="text/plain"><tt>modules.profiler</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/profiler.py" type="text/plain"><tt>modules.profiler</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12520,16 +12567,18 @@ imported by:
 
 <div class="node">
   <a name="modules.report_formatter"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/report_formatter.py" type="text/plain"><tt>modules.report_formatter</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/report_formatter.py" type="text/plain"><tt>modules.report_formatter</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
  &#8226;   <a href="#modules">modules</a>
+ &#8226;   <a href="#modules.business_rules">modules.business_rules</a>
  &#8226;   <a href="#openpyxl">openpyxl</a>
  &#8226;   <a href="#openpyxl.styles">openpyxl.styles</a>
  &#8226;   <a href="#openpyxl.utils">openpyxl.utils</a>
  &#8226;   <a href="#openpyxl.utils.dataframe">openpyxl.utils.dataframe</a>
  &#8226;   <a href="#openpyxl.worksheet.worksheet">openpyxl.worksheet.worksheet</a>
+ &#8226;   <a href="#os">os</a>
  &#8226;   <a href="#pandas">pandas</a>
  &#8226;   <a href="#pathlib">pathlib</a>
  &#8226;   <a href="#typing">typing</a>
@@ -12545,7 +12594,7 @@ imported by:
 
 <div class="node">
   <a name="modules.sales_summary_builder"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/sales_summary_builder.py" type="text/plain"><tt>modules.sales_summary_builder</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/sales_summary_builder.py" type="text/plain"><tt>modules.sales_summary_builder</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12564,8 +12613,28 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="modules.sc_comments_lookup"></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/sc_comments_lookup.py" type="text/plain"><tt>modules.sc_comments_lookup</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#__future__">__future__</a>
+ &#8226;   <a href="#dataclasses">dataclasses</a>
+ &#8226;   <a href="#modules">modules</a>
+ &#8226;   <a href="#modules.utils">modules.utils</a>
+ &#8226;   <a href="#pandas">pandas</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#modules.final_orderbook_builder">modules.final_orderbook_builder</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="modules.source_discovery"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/source_discovery.py" type="text/plain"><tt>modules.source_discovery</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/source_discovery.py" type="text/plain"><tt>modules.source_discovery</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12589,7 +12658,7 @@ imported by:
 
 <div class="node">
   <a name="modules.source_registry"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/source_registry.py" type="text/plain"><tt>modules.source_registry</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/source_registry.py" type="text/plain"><tt>modules.source_registry</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12609,7 +12678,7 @@ imported by:
 
 <div class="node">
   <a name="modules.utils"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/utils.py" type="text/plain"><tt>modules.utils</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/utils.py" type="text/plain"><tt>modules.utils</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12629,7 +12698,9 @@ imports:
 imported by:
     <a href="#config">config</a>
  &#8226;   <a href="#main.py">main.py</a>
+ &#8226;   <a href="#modules.award_lookup">modules.award_lookup</a>
  &#8226;   <a href="#modules.business_rules">modules.business_rules</a>
+ &#8226;   <a href="#modules.buying_group_lookup">modules.buying_group_lookup</a>
  &#8226;   <a href="#modules.derived_inventory">modules.derived_inventory</a>
  &#8226;   <a href="#modules.final_orderbook_builder">modules.final_orderbook_builder</a>
  &#8226;   <a href="#modules.historical_sales">modules.historical_sales</a>
@@ -12637,6 +12708,7 @@ imported by:
  &#8226;   <a href="#modules.master_builder">modules.master_builder</a>
  &#8226;   <a href="#modules.moq_validator">modules.moq_validator</a>
  &#8226;   <a href="#modules.phase4_manager">modules.phase4_manager</a>
+ &#8226;   <a href="#modules.sc_comments_lookup">modules.sc_comments_lookup</a>
  &#8226;   <a href="#modules.source_discovery">modules.source_discovery</a>
 
   </div>
@@ -12645,7 +12717,7 @@ imported by:
 
 <div class="node">
   <a name="modules.validator"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/validator.py" type="text/plain"><tt>modules.validator</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/validator.py" type="text/plain"><tt>modules.validator</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -12666,7 +12738,7 @@ imported by:
 
 <div class="node">
   <a name="modules.workbook_manager"></a>
-  <a target="code" href="///G:/Support/orderbook/Jayanth/OrderbookAutomation/modules/workbook_manager.py" type="text/plain"><tt>modules.workbook_manager</tt></a>
+  <a target="code" href="///G:/Support/orderbook/part1/OrderbookAutomation/modules/workbook_manager.py" type="text/plain"><tt>modules.workbook_manager</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#__future__">__future__</a>
@@ -25304,6 +25376,7 @@ imported by:
  &#8226;   <a href="#bz2">bz2</a>
  &#8226;   <a href="#concurrent.futures.process">concurrent.futures.process</a>
  &#8226;   <a href="#concurrent.futures.thread">concurrent.futures.thread</a>
+ &#8226;   <a href="#config">config</a>
  &#8226;   <a href="#contextlib">contextlib</a>
  &#8226;   <a href="#ctypes">ctypes</a>
  &#8226;   <a href="#dateutil.tz.tz">dateutil.tz.tz</a>
@@ -25331,6 +25404,7 @@ imported by:
  &#8226;   <a href="#main.py">main.py</a>
  &#8226;   <a href="#mimetypes">mimetypes</a>
  &#8226;   <a href="#modules.master_builder">modules.master_builder</a>
+ &#8226;   <a href="#modules.report_formatter">modules.report_formatter</a>
  &#8226;   <a href="#multiprocessing.connection">multiprocessing.connection</a>
  &#8226;   <a href="#multiprocessing.context">multiprocessing.context</a>
  &#8226;   <a href="#multiprocessing.forkserver">multiprocessing.forkserver</a>
@@ -25543,7 +25617,9 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#modules.business_rules">modules.business_rules</a>
+    <a href="#modules.award_lookup">modules.award_lookup</a>
+ &#8226;   <a href="#modules.business_rules">modules.business_rules</a>
+ &#8226;   <a href="#modules.buying_group_lookup">modules.buying_group_lookup</a>
  &#8226;   <a href="#modules.derived_dataset_manager">modules.derived_dataset_manager</a>
  &#8226;   <a href="#modules.derived_inventory">modules.derived_inventory</a>
  &#8226;   <a href="#modules.dictionary_builder">modules.dictionary_builder</a>
@@ -25557,6 +25633,7 @@ imported by:
  &#8226;   <a href="#modules.profiler">modules.profiler</a>
  &#8226;   <a href="#modules.report_formatter">modules.report_formatter</a>
  &#8226;   <a href="#modules.sales_summary_builder">modules.sales_summary_builder</a>
+ &#8226;   <a href="#modules.sc_comments_lookup">modules.sc_comments_lookup</a>
  &#8226;   <a href="#modules.utils">modules.utils</a>
  &#8226;   <a href="#openpyxl.utils.dataframe">openpyxl.utils.dataframe</a>
  &#8226;   <a href="#pandas">pandas</a>
@@ -37258,11 +37335,11 @@ imported by:
   <a target="code" href="///C:/Python312/Lib/site-packages/pandas/plotting/_core.py" type="text/plain"><tt>pandas.plotting._core</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
-    <a href="#__future__">__future__</a>
+    <a href="#'matplotlib.axes'">'matplotlib.axes'</a>
+ &#8226;   <a href="#__future__">__future__</a>
  &#8226;   <a href="#collections.abc">collections.abc</a>
  &#8226;   <a href="#importlib">importlib</a>
  &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
- &#8226;   <a href="#matplotlib">matplotlib</a>
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#pandas">pandas</a>
  &#8226;   <a href="#pandas._config">pandas._config</a>
@@ -38329,7 +38406,7 @@ imported by:
 <div class="node">
   <a name="pytest"></a>
   <a target="code" href="" type="text/plain"><tt>pytest</tt></a>
-<span class="moduletype">MissingModule</span>  <div class="import">
+<span class="moduletype">ExcludedModule</span>  <div class="import">
 imported by:
     <a href="#pandas._testing">pandas._testing</a>
 
@@ -40356,6 +40433,7 @@ imported by:
  &#8226;   <a href="#importlib.resources._legacy">importlib.resources._legacy</a>
  &#8226;   <a href="#importlib.resources.abc">importlib.resources.abc</a>
  &#8226;   <a href="#modules.business_rules">modules.business_rules</a>
+ &#8226;   <a href="#modules.buying_group_lookup">modules.buying_group_lookup</a>
  &#8226;   <a href="#modules.derived_inventory">modules.derived_inventory</a>
  &#8226;   <a href="#modules.dictionary_builder">modules.dictionary_builder</a>
  &#8226;   <a href="#modules.final_orderbook_builder">modules.final_orderbook_builder</a>
