@@ -146,7 +146,11 @@ def build_ups_inventory(
     derived = inventory_summary.merge(allocation_summary, on="NDC", how="outer")
     derived["Inventory"] = coerce_numeric_column(derived["Inventory"]).fillna(0)
     derived["Total"] = coerce_numeric_column(derived["Total"]).fillna(0)
-    derived["UPS Inventory"] = derived["Inventory"] - derived["Total"]
+    # BUSINESS RULE: UPS Inventory is floored at 0. When open order Total
+    # exceeds the hold-code-eligible Inventory, the shortage is reported as 0
+    # available rather than a negative quantity. The underlying "Inventory"
+    # and "Total" columns are left untouched so the shortfall stays auditable.
+    derived["UPS Inventory"] = (derived["Inventory"] - derived["Total"]).clip(lower=0)
     derived = derived[["NDC", "Inventory", "Total", "UPS Inventory"]]
 
     missing_allocations = int((derived["Total"] == 0).sum())

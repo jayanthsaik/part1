@@ -3,22 +3,24 @@ subtraction (modules/derived_inventory.py).
 
 Business rule under test:
 
-    SUM(Daily Inventory["Inventory"])
-    - SUM(Open Order Summary[" Total "])
-    = UPS Inventory
+    MAX(
+        SUM(Daily Inventory["Inventory"])
+        - SUM(Open Order Summary[" Total "]),
+        0
+    ) = UPS Inventory
 
-The derived dataframe exposes the Open Order side under the internal
-column label "Allocated". That label is HISTORICAL/INTERNAL ONLY: it is
-the sum of Open Order Summary's " Total " column, NOT the Daily
-Inventory "Allocated Quantity" column. These tests exist to prevent that
-naming collision from being "fixed" by silently swapping in the wrong
-source measure.
+The derived dataframe exposes the Open Order side under the column
+label "Total". It is the sum of Open Order Summary's " Total " column,
+NOT the Daily Inventory "Allocated Quantity" column. These tests exist
+to prevent that naming collision from being "fixed" by silently
+swapping in the wrong source measure.
 
 Explicitly proven here:
 
 - Daily Inventory "Allocated Quantity" is NOT used in the subtraction.
 - Daily Inventory "Actual Quantity" is NOT used in the subtraction.
 - Open Order Summary " Total " IS used in the subtraction.
+- UPS Inventory is floored at 0 and never reported as negative.
 """
 
 from __future__ import annotations
@@ -132,13 +134,14 @@ class TestUpsInventorySubtractionSource(unittest.TestCase):
         )
         self.assertEqual(ups, 10_000)
 
-    def test_open_order_total_exceeding_inventory_is_negative(self):
-        # No business rule currently clamps negative UPS Inventory.
+    def test_open_order_total_exceeding_inventory_is_floored_at_zero(self):
+        # BUSINESS RULE: UPS Inventory never goes negative; a shortage is
+        # reported as 0 available.
         ups = _ups_inventory(
             _inventory(inventory=10_000, allocated_quantity=0, actual_quantity=0),
             _open_orders(total=12_000),
         )
-        self.assertEqual(ups, -2_000)
+        self.assertEqual(ups, 0)
 
     def test_formula_holds_across_a_range_of_totals(self):
         inventory_df = _inventory(inventory=10_000, allocated_quantity=9_000, actual_quantity=77_777)
@@ -146,7 +149,7 @@ class TestUpsInventorySubtractionSource(unittest.TestCase):
             with self.subTest(total=total):
                 self.assertEqual(
                     _ups_inventory(inventory_df, _open_orders(total=total)),
-                    10_000 - total,
+                    max(10_000 - total, 0),
                 )
 
     def test_internal_allocated_column_holds_open_order_total(self):
