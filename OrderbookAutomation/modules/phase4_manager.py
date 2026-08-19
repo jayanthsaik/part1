@@ -455,7 +455,17 @@ def run_phase4(
     apply_business_rule_formatting(orderbook_ws, enriched_df)
 
     reference_summary_df = _to_reference_summary_dataframe(summary_df, historical_result.previous_month_labels)
-    write_dataframe_sheet(pob_workbook, "Summary", reference_summary_df)
+    summary_ws = write_dataframe_sheet(pob_workbook, "Summary", reference_summary_df)
+    # BUSINESS RULE: the same low UPS Inventory yellow highlight applied to
+    # Sales_Summary.xlsx also applies to the client-facing POB.xlsx Summary
+    # sheet, which carries the identical "Max of UPS Inventory" header. Only
+    # that cell is filled; the POB "Orderbook" sheet's "UPS Inventory"
+    # column is deliberately NOT highlighted.
+    pob_summary_highlight_count = apply_low_ups_inventory_formatting(summary_ws)
+    logger.info(
+        "POB Summary low UPS Inventory highlight | highlighted_cells=%s",
+        pob_summary_highlight_count,
+    )
 
     # Internal audit/debug sheets (Sales Summary, Pivot, Audit, Exceptions)
     # are generated internally in Sales_Summary.xlsx above. They are
@@ -467,7 +477,8 @@ def run_phase4(
     # the two client-facing sheets.
     include_internal_sheets = bool(getattr(config, "pob_include_internal_sheets", False))
     if include_internal_sheets:
-        write_dataframe_sheet(pob_workbook, "Sales Summary", summary_df)
+        internal_summary_ws = write_dataframe_sheet(pob_workbook, "Sales Summary", summary_df)
+        apply_low_ups_inventory_formatting(internal_summary_ws)
         write_dataframe_sheet(pob_workbook, "Pivot", aggregated_df)
 
         pob_audit_rows = {

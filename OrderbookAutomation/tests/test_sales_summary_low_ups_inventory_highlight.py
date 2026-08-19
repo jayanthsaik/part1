@@ -1,14 +1,15 @@
-"""Tests for the low UPS Inventory yellow highlight on Sales_Summary.xlsx.
+"""Tests for the low UPS Inventory yellow highlight on the aggregated
+Summary sheets (Sales_Summary.xlsx and the POB.xlsx "Summary" sheet).
 
 Business rule under test:
 
-    On the Sales Summary sheet, when "Max of UPS Inventory" < 10,000 that
+    On the Summary sheets, when "Max of UPS Inventory" < 10,000 that
     single cell is filled yellow. Only that cell is filled -- never the
     whole row, and never any other column.
 
-This rule was MOVED off the client-facing POB.xlsx "UPS Inventory"
-column (see test_moq_row_highlight.py, which pins that POB.xlsx no
-longer highlights it).
+This rule was MOVED off the client-facing POB.xlsx "Orderbook" sheet's
+"UPS Inventory" column (see test_moq_row_highlight.py, which pins that
+the Orderbook sheet no longer highlights it).
 """
 
 from __future__ import annotations
@@ -127,6 +128,61 @@ class TestSalesSummaryLowUpsInventoryHighlight(unittest.TestCase):
         header = {str(c.value): c.column for c in worksheet[1]}
         self.assertEqual(_fill_rgb(worksheet.cell(row=2, column=header["Max of UPS Inventory"])), YELLOW)
         self.assertIsNone(_fill_rgb(worksheet.cell(row=2, column=header["Material Description"])))
+
+
+class TestPobSummaryLowUpsInventoryHighlight(unittest.TestCase):
+    """The same rule must also apply to the client-facing POB.xlsx
+    "Summary" sheet, which carries the identical "Max of UPS Inventory"
+    header (see ``_summary_reference_columns`` in phase4_manager.py)."""
+
+    def _pob_summary_sheet(self, values: list):
+        workbook = Workbook()
+        # Exact reference Summary header order, incl. the leading space in
+        # " Material Description" and dynamic month labels.
+        df = pd.DataFrame(
+            {
+                " Material Description": [f"Product {i}" for i in range(len(values))],
+                "Sold-to party Name": ["Customer"] * len(values),
+                "Lookup": [f"KEY{i}" for i in range(len(values))],
+                "NDC Code": ["64380016101"] * len(values),
+                "Max of UPS Inventory": values,
+                "Sum of Sales Order Qty": [100] * len(values),
+                "Max of Sales Qty MTD": [5] * len(values),
+                "Max of Forecast Qty": [7] * len(values),
+                "John": [""] * len(values),
+                "Feb": [1] * len(values),
+                "Mar": [2] * len(values),
+                "Apr": [3] * len(values),
+                "Avg": [2] * len(values),
+                "Buying Group": [""] * len(values),
+                "Award Type": [""] * len(values),
+                "SC Comments": [""] * len(values),
+            }
+        )
+        worksheet = write_dataframe_sheet(workbook, "Summary", df)
+        count = apply_low_ups_inventory_formatting(worksheet)
+        header = {str(c.value): c.column for c in worksheet[1]}
+        return worksheet, header, count
+
+    def test_below_threshold_is_highlighted_on_pob_summary(self):
+        worksheet, header, count = self._pob_summary_sheet([9_999])
+        self.assertEqual(_fill_rgb(worksheet.cell(row=2, column=header["Max of UPS Inventory"])), YELLOW)
+        self.assertEqual(count, 1)
+
+    def test_above_threshold_is_not_highlighted_on_pob_summary(self):
+        worksheet, header, count = self._pob_summary_sheet([10_000])
+        self.assertIsNone(_fill_rgb(worksheet.cell(row=2, column=header["Max of UPS Inventory"])))
+        self.assertEqual(count, 0)
+
+    def test_no_other_reference_column_is_filled(self):
+        worksheet, header, _ = self._pob_summary_sheet([250])
+        for name, idx in header.items():
+            if name == "Max of UPS Inventory":
+                continue
+            self.assertIsNone(
+                _fill_rgb(worksheet.cell(row=2, column=idx)),
+                f"'{name}' must not be highlighted on the POB Summary sheet",
+            )
 
 
 if __name__ == "__main__":
