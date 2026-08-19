@@ -192,25 +192,24 @@ class TestMoqWholeRowHighlight(unittest.TestCase):
         for name, idx in header.items():
             self.assertIsNone(_fill_rgb(worksheet.cell(row=2, column=idx)), f"'{name}' should not be yellow")
 
-    def test_low_ups_inventory_still_works_independently(self):
-        # No MOQ issue (48/24 exact), but Low_UPS_Inventory flag True.
-        # Only the UPS Inventory cell should be yellow, not the entire row.
+    def test_low_ups_inventory_is_not_highlighted_on_pob(self):
+        # BUSINESS RULE: the low UPS Inventory yellow highlight was moved to
+        # the Sales_Summary.xlsx "Max of UPS Inventory" column. Even when the
+        # Low_UPS_Inventory flag is True, POB.xlsx must leave every cell --
+        # including "UPS Inventory" -- unfilled when there is no MOQ issue
+        # (48/24 is exact).
         worksheet, df = _build_sheet([_row(48, 24)], low_ups_inventory_flags=[True])
         header = {str(c.value): c.column for c in worksheet[1]}
-        ups_inventory_idx = header["UPS Inventory"]
-        
-        # UPS Inventory cell should be yellow
-        self.assertEqual(_fill_rgb(worksheet.cell(row=2, column=ups_inventory_idx)), FILL_LOW_INVENTORY_YELLOW.fgColor.rgb)
-        
-        # All other cells should NOT be yellow
-        for name, idx in header.items():
-            if name != "UPS Inventory":
-                self.assertIsNone(_fill_rgb(worksheet.cell(row=2, column=idx)), f"'{name}' should not be yellow")
 
-    def test_moq_and_low_ups_inventory_both_true_still_yellow(self):
-        # When both MOQ issue (75/24) and Low_UPS_Inventory are true:
-        # - Entire row should be yellow (from MOQ issue)
-        # - UPS Inventory cell also yellow (from Low_UPS_Inventory)
+        for name, idx in header.items():
+            self.assertIsNone(
+                _fill_rgb(worksheet.cell(row=2, column=idx)),
+                f"'{name}' should not be highlighted on POB.xlsx",
+            )
+
+    def test_moq_row_still_yellow_when_low_ups_inventory_flag_set(self):
+        # The MOQ whole-row highlight (75/24) is unaffected by the removal of
+        # the low UPS Inventory rule; the entire row remains yellow.
         worksheet, df = _build_sheet([_row(75, 24)], low_ups_inventory_flags=[True])
         header = {str(c.value): c.column for c in worksheet[1]}
         for name, idx in header.items():

@@ -10,6 +10,8 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.worksheet import Worksheet
 
+from modules.business_rules import LOW_UPS_INVENTORY_THRESHOLD
+
 # Documented SOP colors (Part E).
 FILL_CONTROLLED_PRODUCT_PINK = PatternFill(start_color="FFC0CB", end_color="FFC0CB", fill_type="solid")
 FILL_PRICE_ISSUE_ORANGE = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")
@@ -119,6 +121,50 @@ def _autosize_columns(worksheet: Worksheet) -> None:
         worksheet.column_dimensions[get_column_letter(column_cells[0].column)].width = min(max(max_length + 2, 10), 55)
 
 
+def apply_low_ups_inventory_formatting(
+    worksheet: Worksheet,
+    *,
+    ups_inventory_column: str = "Max of UPS Inventory",
+    threshold: float = LOW_UPS_INVENTORY_THRESHOLD,
+) -> int:
+    """Highlight low UPS Inventory cells yellow on a Sales Summary worksheet.
+
+    BUSINESS RULE: on Sales_Summary.xlsx, when "Max of UPS Inventory" is
+    below ``threshold`` (default 10,000) that single cell is filled
+    yellow. Only the cell is filled -- never the whole row -- and no other
+    column is touched.
+
+    The column is located by its header name (never a hardcoded column
+    letter), so it keeps working if the Sales Summary column order
+    changes. If the header is absent the function is a no-op. Blank or
+    non-numeric values are skipped safely (no highlight, no error).
+
+    Returns the number of cells highlighted, for logging/audit.
+    """
+    header_to_column_index = {str(cell.value): cell.column for cell in worksheet[1]}
+    column_index = header_to_column_index.get(ups_inventory_column)
+    if column_index is None:
+        return 0
+
+    highlighted = 0
+    for row_number in range(2, worksheet.max_row + 1):
+        cell = worksheet.cell(row=row_number, column=column_index)
+        value = cell.value
+        if value is None or isinstance(value, bool):
+            continue
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            continue
+        if pd.isna(numeric_value):
+            continue
+        if numeric_value < threshold:
+            cell.fill = FILL_LOW_INVENTORY_YELLOW
+            highlighted += 1
+
+    return highlighted
+
+
 def apply_business_rule_formatting(
     worksheet: Worksheet,
     df: pd.DataFrame,
@@ -163,25 +209,26 @@ def apply_business_rule_formatting(
     ``Sales Order Qty`` is not an exact multiple of ``Pack Size (MOQ)``
     (computed directly from those two worksheet cells, header-driven --
     never a hardcoded column letter), the ENTIRE row is filled yellow.
-    
-    Low UPS Inventory rule: when UPS Inventory < 10,000, only the UPS
-    Inventory cell itself is filled yellow (not the entire row). This is
-    independent of the MOQ Issue rule. Blank/zero/non-numeric Pack Size
-    or Sales Order Qty are handled safely: no highlight, no error.
-    Controlled Product (pink) still takes precedence over any yellow.
+    Blank/zero/non-numeric Pack Size or Sales Order Qty are handled
+    safely: no highlight, no error. Controlled Product (pink) still takes
+    precedence over the MOQ yellow.
+
+    NOTE: the Low UPS Inventory yellow highlight is intentionally NOT
+    applied here. That rule now lives on the Sales_Summary.xlsx
+    "Max of UPS Inventory" column (see
+    ``apply_low_ups_inventory_formatting``), so the client-facing
+    POB.xlsx "UPS Inventory" cells are never highlighted.
     """
     header_to_column_index = {str(cell.value): cell.column for cell in worksheet[1]}
 
     controlled_series = df[controlled_product_column] if controlled_product_column in df.columns else None
     price_issue_series = df[price_issue_column] if price_issue_column in df.columns else None
-    low_inventory_series = df[low_inventory_column] if low_inventory_column in df.columns else None
 
     price_col_indexes = [header_to_column_index[column] for column in price_columns if column in header_to_column_index]
     cancel_idx = header_to_column_index.get(cancel_column) if cancel_column else None
     hold_idx = header_to_column_index.get(hold_column) if hold_column else None
     sales_order_qty_idx = header_to_column_index.get(sales_order_qty_column)
     pack_size_idx = header_to_column_index.get(pack_size_column)
-    ups_inventory_idx = header_to_column_index.get(ups_inventory_column)
 
     df_row_values = df.reset_index(drop=True)
 
@@ -196,11 +243,6 @@ def apply_business_rule_formatting(
             price_issue_series is not None
             and df_index < len(df_row_values)
             and bool(df_row_values[price_issue_column].iloc[df_index]) is True
-        )
-        is_low_inventory = (
-            low_inventory_series is not None
-            and df_index < len(df_row_values)
-            and bool(df_row_values[low_inventory_column].iloc[df_index]) is True
         )
 
         # MOQ Issue state computed independently, BEFORE any fill decision,
@@ -223,10 +265,6 @@ def apply_business_rule_formatting(
         if row_fill is not None:
             for column_index in range(1, worksheet.max_column + 1):
                 worksheet.cell(row=row_number, column=column_index).fill = row_fill
-
-        # Apply cell-specific yellow fill for Low UPS Inventory (only the UPS Inventory cell)
-        if is_low_inventory and ups_inventory_idx is not None:
-            worksheet.cell(row=row_number, column=ups_inventory_idx).fill = FILL_LOW_INVENTORY_YELLOW
 
         if is_price_issue:
             for column_index in price_col_indexes:

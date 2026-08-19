@@ -10,7 +10,12 @@ from openpyxl import Workbook
 from modules.business_rules import apply_business_rules
 from modules.final_orderbook_builder import enrich_master_with_phase2_and_cip, merge_historical_sales
 from modules.historical_sales import build_historical_sales, determine_reporting_period
-from modules.report_formatter import apply_business_rule_formatting, save_workbook, write_dataframe_sheet
+from modules.report_formatter import (
+    apply_business_rule_formatting,
+    apply_low_ups_inventory_formatting,
+    save_workbook,
+    write_dataframe_sheet,
+)
 from modules.sales_summary_builder import build_sales_summary_aggregation
 from modules.utils import normalize_ndc_key, normalize_text_key
 
@@ -389,7 +394,15 @@ def run_phase4(
 
     # ---------------- Sales_Summary.xlsx ----------------
     sales_summary_workbook = Workbook()
-    write_dataframe_sheet(sales_summary_workbook, "Sales Summary", summary_df)
+    sales_summary_ws = write_dataframe_sheet(sales_summary_workbook, "Sales Summary", summary_df)
+    # BUSINESS RULE: the low UPS Inventory yellow highlight lives here, on
+    # the aggregated "Max of UPS Inventory" column, and NOT on the
+    # client-facing POB.xlsx "UPS Inventory" column.
+    low_inventory_highlight_count = apply_low_ups_inventory_formatting(sales_summary_ws)
+    logger.info(
+        "Sales Summary low UPS Inventory highlight | highlighted_cells=%s",
+        low_inventory_highlight_count,
+    )
 
     audit_df = pd.DataFrame(
         [
