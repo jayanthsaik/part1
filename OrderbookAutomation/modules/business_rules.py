@@ -85,6 +85,28 @@ def flag_low_ups_inventory(df: pd.DataFrame, ups_inventory_column: str) -> pd.Se
     return (ups_inventory < LOW_UPS_INVENTORY_THRESHOLD).fillna(False)
 
 
+_MOQ_TOLERANCE = 1e-6
+
+
+def _compute_moq_issue_series(df: pd.DataFrame, qty_col: str = "Sales Order Qty", moq_col: str = "Pack Size (MOQ)") -> pd.Series:
+    """Return boolean Series marking rows where qty / moq is not an integer.
+    Missing/zero MOQ or non-numeric values are treated as NOT an issue.
+    """
+    qty = coerce_numeric_column(df.get(qty_col, pd.Series(dtype="float"))).fillna(0)
+    moq = coerce_numeric_column(df.get(moq_col, pd.Series(dtype="float")))
+    result = pd.Series(False, index=qty.index)
+
+    valid = moq.notna() & (moq != 0) & qty.notna()
+    if not valid.any():
+        return result
+
+    q = qty.loc[valid] / moq.loc[valid]
+    frac = (q % 1).abs()
+    issue_mask = (frac > _MOQ_TOLERANCE) & ((1 - frac) > _MOQ_TOLERANCE)
+    result.loc[valid] = issue_mask
+    return result
+
+
 def apply_business_rules(
     df: pd.DataFrame,
     *,
