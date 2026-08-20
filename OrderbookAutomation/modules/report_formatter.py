@@ -128,20 +128,7 @@ def apply_low_ups_inventory_formatting(
     ups_inventory_column: str = "Max of UPS Inventory",
     threshold: float = LOW_UPS_INVENTORY_THRESHOLD,
 ) -> int:
-    """Highlight low UPS Inventory cells yellow on a Sales Summary worksheet.
-
-    BUSINESS RULE: on Sales_Summary.xlsx, when "Max of UPS Inventory" is
-    below ``threshold`` (default 10,000) that single cell is filled
-    yellow. Only the cell is filled -- never the whole row -- and no other
-    column is touched.
-
-    The column is located by its header name (never a hardcoded column
-    letter), so it keeps working if the Sales Summary column order
-    changes. If the header is absent the function is a no-op. Blank or
-    non-numeric values are skipped safely (no highlight, no error).
-
-    Returns the number of cells highlighted, for logging/audit.
-    """
+   
     header_to_column_index = {str(cell.value): cell.column for cell in worksheet[1]}
     column_index = header_to_column_index.get(ups_inventory_column)
     if column_index is None:
@@ -180,46 +167,7 @@ def apply_business_rule_formatting(
     pack_size_column: str = "Pack Size (MOQ)",
     ups_inventory_column: str = "UPS Inventory",
 ) -> None:
-    """Apply the documented Part E color-coding rules to a written worksheet.
-
-    Formatting is applied strictly after business-rule flags have already
-    been computed (Part B); this function never computes new business
-    conditions, it only reads existing flag values -- EXCEPT for the MOQ
-    Issue whole-row highlight below, which is computed directly from the
-    written worksheet's ``Sales Order Qty`` / ``Pack Size (MOQ)`` cells (a
-    final-Orderbook-only formatting enhancement, independent of the
-    optional Phase 2 sales_summary source).
-
-    ``df`` is the internal working dataframe (e.g. ``enriched_df``) that
-    still contains the internal flag columns (Controlled_Product,
-    Price_Issue, Low_UPS_Inventory), even when those columns have been
-    excluded from the written client-facing ``worksheet`` (per the
-    authoritative reference schema). Flags are read positionally from
-    ``df`` (row order/grain is preserved 1:1 between ``df`` and
-    ``worksheet``, since the client-facing Orderbook performs no
-    aggregation or row reduction); any business columns still present on
-    the worksheet itself (e.g. "Action", price columns) are read directly
-    from the worksheet as before.
-
-    Precedence per SOP: a row that is both Controlled Product and Price
-    Issue keeps its pink row fill, except the specific price cells are
-    overwritten with orange to highlight the pricing problem within an
-    otherwise-pink controlled-product row.
-
-    MOQ Issue rule (per the documented manual process): when
-    ``Sales Order Qty`` is not an exact multiple of ``Pack Size (MOQ)``
-    (computed directly from those two worksheet cells, header-driven --
-    never a hardcoded column letter), the ENTIRE row is filled yellow.
-    Blank/zero/non-numeric Pack Size or Sales Order Qty are handled
-    safely: no highlight, no error. Controlled Product (pink) still takes
-    precedence over the MOQ yellow.
-
-    NOTE: the Low UPS Inventory yellow highlight is intentionally NOT
-    applied here. That rule now lives on the Sales_Summary.xlsx
-    "Max of UPS Inventory" column (see
-    ``apply_low_ups_inventory_formatting``), so the client-facing
-    POB.xlsx "UPS Inventory" cells are never highlighted.
-    """
+    
     header_to_column_index = {str(cell.value): cell.column for cell in worksheet[1]}
 
     controlled_series = df[controlled_product_column] if controlled_product_column in df.columns else None
@@ -246,10 +194,7 @@ def apply_business_rule_formatting(
             and bool(df_row_values[price_issue_column].iloc[df_index]) is True
         )
 
-        # MOQ Issue state computed independently, BEFORE any fill decision,
-        # directly from this row's own worksheet cells. This flag does not
-        # depend on -- and is not overwritten by -- any later change to
-        # UPS Inventory or any other cell in the row.
+        
         is_moq_issue = False
         if sales_order_qty_idx is not None and pack_size_idx is not None:
             sales_order_qty_value = worksheet.cell(row=row_number, column=sales_order_qty_idx).value
@@ -264,8 +209,8 @@ def apply_business_rule_formatting(
             row_fill = FILL_LOW_INVENTORY_YELLOW
 
         if row_fill is not None:
-            for column_index in range(1, worksheet.max_column + 1):
-                worksheet.cell(row=row_number, column=column_index).fill = row_fill
+            for col in range(1, worksheet.max_column + 1):
+                worksheet.cell(row=row_number, column=col).fill = row_fill
 
         if is_price_issue:
             for column_index in price_col_indexes:
@@ -283,21 +228,16 @@ def apply_business_rule_formatting(
                 for column_index in range(1, worksheet.max_column + 1):
                     worksheet.cell(row=row_number, column=column_index).fill = FILL_HOLD_BLUE
 
+    # BUSINESS RULE: MOQ -> previously filled the entire row yellow when is_moq_issue.
+    # Change: only highlight the Sales Order Qty cell in yellow so the rest of the row remains unchanged.
+    if is_moq_issue:
+        moq_col_idx = _find_column_index_by_header(worksheet, "Sales Order Qty")
+        if moq_col_idx is not None:
+            worksheet.cell(row=row_number, column=moq_col_idx).fill = FILL_LOW_INVENTORY_YELLOW
+
 
 def save_workbook(workbook: Workbook, output_path: Path) -> None:
-    """Save ``workbook`` ATOMICALLY to ``output_path``.
-
-    The workbook is first written to a temporary file in the same folder and
-    only moved into place once it has been fully serialized. This guarantees a
-    failed/interrupted run can never leave a partial or corrupt business
-    workbook (e.g. a half-written POB.xlsx) that a client might mistake for a
-    valid result: either the complete new file exists, or the path is left as
-    it was.
-
-    ``os.replace`` is atomic on Windows and POSIX for same-volume moves, which
-    is why the temp file is deliberately created alongside the destination
-    rather than in the system temp folder.
-    """
+    
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if "Sheet" in workbook.sheetnames and len(workbook.sheetnames) > 1:
         default_sheet = workbook["Sheet"]

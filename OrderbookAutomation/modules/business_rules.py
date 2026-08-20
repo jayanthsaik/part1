@@ -133,11 +133,14 @@ def apply_business_rules(
     working["Price_Issue"] = price_issue
     working["Price_Difference"] = price_difference
 
+    # Always compute MOQ issue from the raw Orderbook columns (Sales Order Qty ÷ Pack Size (MOQ)).
+    # Do NOT reuse the Phase‑2 / sales_summary MOQ_Issue column — compute from the actual Orderbook values.
     if moq_issue_column in working.columns:
-        working["MOQ_Issue"] = working[moq_issue_column].fillna(True)
-    else:
-        working["MOQ_Issue"] = pd.NA
-        logger.warning("MOQ_Issue column '%s' not found; Phase 2 MOQ validation was not reused for these rows", moq_issue_column)
+        logger.info(
+            "Phase 2 MOQ_Issue column '%s' present but ignored; computing MOQ issues from Orderbook columns",
+            moq_issue_column,
+        )
+    working["MOQ_Issue"] = _compute_moq_issue_series(working)
 
     working["Low_UPS_Inventory"] = flag_low_ups_inventory(working, ups_inventory_column)
 
@@ -149,7 +152,7 @@ def apply_business_rules(
     stats = BusinessRuleStats(
         controlled_product_count=int(working["Controlled_Product"].sum()),
         price_issue_count=int(working["Price_Issue"].sum()),
-        moq_issue_count=int(working["MOQ_Issue"].fillna(False).astype(bool).sum()) if working["MOQ_Issue"].notna().any() else 0,
+        moq_issue_count=int(working["MOQ_Issue"].astype(bool).sum()),
         low_ups_inventory_count=int(working["Low_UPS_Inventory"].sum()),
     )
 
