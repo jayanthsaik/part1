@@ -128,7 +128,14 @@ def apply_low_ups_inventory_formatting(
     ups_inventory_column: str = "Max of UPS Inventory",
     threshold: float = LOW_UPS_INVENTORY_THRESHOLD,
 ) -> int:
-   
+    """Fill the ``ups_inventory_column`` cell yellow where its value is below
+    ``threshold``, and return the number of cells highlighted.
+
+    This is the ONLY place the Low UPS Inventory rule is applied; it targets
+    the aggregated Summary sheet's "Max of UPS Inventory" column and never
+    the client-facing Orderbook sheet's "UPS Inventory" column. Blank and
+    non-numeric values are skipped safely (no highlight, no error).
+    """
     header_to_column_index = {str(cell.value): cell.column for cell in worksheet[1]}
     column_index = header_to_column_index.get(ups_inventory_column)
     if column_index is None:
@@ -167,7 +174,52 @@ def apply_business_rule_formatting(
     pack_size_column: str = "Pack Size (MOQ)",
     ups_inventory_column: str = "UPS Inventory",
 ) -> None:
-    
+    """Apply the documented Part E color-coding rules to a written worksheet.
+
+    Formatting is applied strictly after business-rule flags have already
+    been computed (Part B); this function never computes new business
+    conditions, it only reads existing flag values -- EXCEPT for the MOQ
+    Issue highlight below, which is computed directly from the written
+    worksheet's ``Sales Order Qty`` / ``Pack Size (MOQ)`` cells (a
+    final-Orderbook-only formatting enhancement, independent of the
+    optional Phase 2 sales_summary source).
+
+    ``df`` is the internal working dataframe (e.g. ``enriched_df``) that
+    still contains the internal flag columns (Controlled_Product,
+    Price_Issue, Low_UPS_Inventory), even when those columns have been
+    excluded from the written client-facing ``worksheet`` (per the
+    authoritative reference schema). Flags are read positionally from
+    ``df`` (row order/grain is preserved 1:1 between ``df`` and
+    ``worksheet``, since the client-facing Orderbook performs no
+    aggregation or row reduction); any business columns still present on
+    the worksheet itself (e.g. "Action", price columns) are read directly
+    from the worksheet as before.
+
+    Fill precedence (applied in this order, later overwrites earlier):
+
+    1. Controlled Product -> WHOLE ROW pink.
+    2. Price Issue -> the specific price cells orange (overrides pink on
+       those cells only).
+    3. MOQ Issue -> the "Sales Order Qty" CELL ONLY yellow (overrides pink
+       on that cell only, same "cell overrides row" pattern as the orange
+       price cells). The MOQ rule NEVER fills the whole row.
+    4. Action = Cancel -> WHOLE ROW red; Action = Hold -> WHOLE ROW blue.
+       Applied last, so Cancel/Hold take FULL precedence over the pink row
+       fill and over the orange price / yellow MOQ cell highlights.
+
+    MOQ Issue rule (per the documented manual process): when
+    ``Sales Order Qty`` is not an exact multiple of ``Pack Size (MOQ)``
+    (computed directly from those two worksheet cells, header-driven --
+    never a hardcoded column letter), the ``Sales Order Qty`` cell is
+    filled yellow. Blank/zero/non-numeric Pack Size or Sales Order Qty are
+    handled safely: no highlight, no error.
+
+    NOTE: the Low UPS Inventory yellow highlight is intentionally NOT
+    applied here. That rule lives on the Summary sheet's
+    "Max of UPS Inventory" column (see
+    ``apply_low_ups_inventory_formatting``), so the client-facing
+    POB.xlsx "UPS Inventory" cells are never highlighted.
+    """
     header_to_column_index = {str(cell.value): cell.column for cell in worksheet[1]}
 
     controlled_series = df[controlled_product_column] if controlled_product_column in df.columns else None
@@ -194,31 +246,36 @@ def apply_business_rule_formatting(
             and bool(df_row_values[price_issue_column].iloc[df_index]) is True
         )
 
-        
+        # MOQ Issue state computed independently, BEFORE any fill decision,
+        # directly from this row's own worksheet cells.
         is_moq_issue = False
         if sales_order_qty_idx is not None and pack_size_idx is not None:
             sales_order_qty_value = worksheet.cell(row=row_number, column=sales_order_qty_idx).value
             pack_size_value = worksheet.cell(row=row_number, column=pack_size_idx).value
             is_moq_issue = _is_moq_issue(sales_order_qty_value, pack_size_value)
 
-        # Apply whole-row fills for Controlled Product or MOQ Issue
-        row_fill = None
+        # Whole-row fill for Controlled Product only. MOQ no longer fills the
+        # whole row -- it is a single-cell highlight applied further below.
         if is_controlled:
-            row_fill = FILL_CONTROLLED_PRODUCT_PINK
-        elif is_moq_issue:
-            row_fill = FILL_LOW_INVENTORY_YELLOW
-
-        if row_fill is not None:
             for col in range(1, worksheet.max_column + 1):
-                worksheet.cell(row=row_number, column=col).fill = row_fill
+                worksheet.cell(row=row_number, column=col).fill = FILL_CONTROLLED_PRODUCT_PINK
 
         if is_price_issue:
             for column_index in price_col_indexes:
                 worksheet.cell(row=row_number, column=column_index).fill = FILL_PRICE_ISSUE_ORANGE
 
+        # MOQ Issue: highlight ONLY the "Sales Order Qty" cell yellow. This
+        # follows the same "cell overrides row" pattern as the orange price
+        # cells, so the yellow remains visible inside an otherwise-pink
+        # Controlled Product row.
+        if is_moq_issue and sales_order_qty_idx is not None:
+            worksheet.cell(row=row_number, column=sales_order_qty_idx).fill = FILL_LOW_INVENTORY_YELLOW
+
         # Action-based colors (Cancel = red, Hold = blue). These read an
         # existing "Action" business field if present; no automatic
-        # business rule creates or infers this value.
+        # business rule creates or infers this value. Applied LAST so a
+        # Cancel/Hold row takes full precedence over the pink row fill and
+        # over the orange price / yellow MOQ cell highlights.
         if cancel_idx is not None:
             action_value = str(worksheet.cell(row=row_number, column=cancel_idx).value or "").strip().lower()
             if action_value == "cancel":
@@ -228,16 +285,15 @@ def apply_business_rule_formatting(
                 for column_index in range(1, worksheet.max_column + 1):
                     worksheet.cell(row=row_number, column=column_index).fill = FILL_HOLD_BLUE
 
-    # BUSINESS RULE: MOQ -> previously filled the entire row yellow when is_moq_issue.
-    # Change: only highlight the Sales Order Qty cell in yellow so the rest of the row remains unchanged.
-    if is_moq_issue:
-        moq_col_idx = _find_column_index_by_header(worksheet, "Sales Order Qty")
-        if moq_col_idx is not None:
-            worksheet.cell(row=row_number, column=moq_col_idx).fill = FILL_LOW_INVENTORY_YELLOW
-
 
 def save_workbook(workbook: Workbook, output_path: Path) -> None:
-    
+    """Save ``workbook`` ATOMICALLY to ``output_path``.
+
+    The workbook is first written to a temporary file in the same folder and
+    then atomically moved into place, so a failure mid-write can never leave
+    a partial or corrupt output file behind. The temp artifact is always
+    cleaned up on error.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if "Sheet" in workbook.sheetnames and len(workbook.sheetnames) > 1:
         default_sheet = workbook["Sheet"]
