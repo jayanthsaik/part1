@@ -108,6 +108,36 @@ def _sheet_has_data_rows(file_path: Path, sheet_name: str, header_row_index: int
         workbook.close()
 
 
+def _normalize_header(header: object) -> str:
+    """Normalize a header for tolerant, spelling-variant-safe comparison.
+
+    Collapses case, leading/trailing/internal whitespace runs, and the
+    common ``_`` / ``-`` separators so that "Reason Code", "Reason code",
+    "REASON_CODE" and "Reason  Code " all compare equal.
+
+    NOTE: used ONLY for source *discovery*. Once a source is resolved,
+    downstream phases continue to address columns by their original,
+    unmodified business names -- nothing is renamed in the dataframes.
+
+    Widening only: every signature that matched before still matches
+    (e.g. open_order_summary's " Total " -> "total",
+    orderbook's "PackSize(MOQ)" -> "packsize(moq)").
+    """
+    if header is None:
+        return ""
+    text = str(header).replace("_", " ").replace("-", " ")
+    return " ".join(text.split()).casefold()
+
+
+def _headers_present(
+    worksheet_headers: Sequence[object],
+    required_headers: Sequence[str],
+) -> bool:
+    """Return True when every required header is present (normalized match)."""
+    available = {_normalize_header(h) for h in worksheet_headers}
+    return all(_normalize_header(r) in available for r in required_headers)
+
+
 def discover_sources(
     source_definitions: Dict[str, SourceDefinition],
     input_dir: Path,

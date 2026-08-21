@@ -163,4 +163,36 @@ SOURCE_DEFINITIONS: dict[str, SourceDefinition] = {
         preferred_sheet_names=("Sheet1",),
         filename_hint="Sales trend export (Strend)",
     ),
+    "upload_sheet": SourceDefinition(
+        logical_name="upload_sheet",
+        display_name="Upload Sheet",
+        # Discovered ONLY by header signature -- the client may name this file
+        # anything (e.g. "upload sheet.xlsx", "Upload_2026-08-21.xlsx").
+        #
+        # COLLISION NOTE: "NDC Code", "Sales Order Qty" and "Action" all also
+        # appear in the Orderbook source. "Reason Code" is therefore the SOLE
+        # discriminating header between this source and "orderbook". All four
+        # headers are kept required (rather than a narrower signature) so the
+        # combined signature stays specific enough to avoid a false match.
+        # If the Orderbook export ever gains a "Reason Code" column, this
+        # source MUST be given an additional discriminating required header.
+        required_headers=(
+            "NDC Code",
+            "Reason Code",
+            "Action",
+            "Sales Order Qty",
+        ),
+        optional_headers=(
+            "Sales Order No.",
+            "Material Description",
+            "Sold-to party Name",
+        ),
+        preferred_sheet_names=("Sheet1",),
+        filename_hint="Upload / order-adjustment sheet (optional; e.g. upload sheet.xlsx)",
+        # Soft tiebreaker only -- never a primary matching rule.
+        filename_keywords=("upload",),
+        # Pipeline must still run when this file is absent (UPS falls back to
+        # Upload_Qty = 0).
+        mandatory=False,
+    ),
 }

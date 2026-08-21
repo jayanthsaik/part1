@@ -153,6 +153,7 @@ def run_phase3(loaded_workbooks, config, logger):
         "buying_groups": _first_sheet_dataframe(loaded_workbooks, "buying_groups"),
         "awards": _first_sheet_dataframe(loaded_workbooks, "awards"),
         "critical_inventory_tracker": _first_sheet_dataframe(loaded_workbooks, "critical_inventory_tracker"),
+        "upload_sheet": _first_sheet_dataframe(loaded_workbooks, "upload_sheet"),
     }
     source_frames = {key: value for key, value in source_frames.items() if value is not None}
 

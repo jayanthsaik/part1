@@ -13,6 +13,9 @@ from modules.derived_inventory import DerivedInventoryResult, build_ups_inventor
 from modules.loader import WorkbookData
 from modules.lookup_key_builder import LookupKeyResult, build_lookup_keys
 from modules.moq_validator import MoqValidationResult, build_moq_validation
+from modules.utils import normalize_ndc_key, coerce_numeric_column
+from typing import Optional
+import logging
 
 
 @dataclass(frozen=True)
@@ -24,21 +27,85 @@ class Phase2Result:
     moq_validation_df: pd.DataFrame
     statistics_df: pd.DataFrame
     output_path: Path
+    upload_adjustments_df: Optional[pd.DataFrame] = None
 
 
 def run_phase2(loaded_workbooks: dict[str, WorkbookData], config: AppConfig, logger, execution_time_seconds: float) -> Phase2Result:
     """Generate all Phase 2 derived datasets from Phase 1 loaded workbooks."""
     inventory_df = _get_sheet_dataframe(loaded_workbooks, "inventory")
     open_orders_df = _get_sheet_dataframe(loaded_workbooks, "open_order_summary")
-    # "sales_summary" is an OPTIONAL input source (see source_registry.py):
-    # this pipeline's actual workflow generates a Sales Summary as an
-    # OUTPUT (Sales_Summary.xlsx) rather than receiving one as a business
-    # input. When absent, lookup-key/MOQ validation derived datasets are
-    # produced as empty (but correctly shaped) results instead of failing
-    # the whole run.
+    # optional upload-adjustments workbook (may be missing)
+    # Resolved by header signature via the source registry -- never by filename.
+    upload_df = _get_sheet_dataframe(loaded_workbooks, "upload_sheet")
+    upload_adjustments_df = None
+    if upload_df is None:
+        logger.warning(
+            "No Upload Sheet discovered in the input folder. UPS Inventory will be "
+            "calculated WITHOUT upload adjustments (Upload_Qty = 0). If an upload "
+            "sheet was provided, verify it contains the headers: "
+            "NDC Code, Reason Code, Action, Sales Order Qty."
+        )
+    else:
+        # permissive header discovery
+        cols = {c.strip().lower(): c for c in upload_df.columns}
+        ndc_col = cols.get("ndc") or cols.get("ndc code") or cols.get("ndc_code") or None
+        reason_col = cols.get("reason code") or cols.get("reason_code") or None
+        action_col = cols.get("action") or None
+        qty_col = cols.get("sales order qty") or cols.get("sales_order_qty") or None
+
+        if ndc_col is None:
+            logger.warning("Upload adjustments sheet found but no NDC column located; ignoring upload adjustments")
+        else:
+            working = upload_df.copy()
+            # normalize text
+            working[ndc_col] = working[ndc_col].astype("string").str.strip().map(lambda v: normalize_ndc_key(v) if pd.notna(v) else v)
+
+            # handle reason code (numeric or string)
+            if reason_col is not None:
+                reason_vals = working[reason_col].astype("string").str.strip().str.lower()
+                reason_mask = reason_vals.isin({"1", "4"})
+            else:
+                reason_mask = pd.Series(True, index=working.index)
+
+            # Action must be Y/Yes (case-insensitive)
+            if action_col is not None:
+                action_vals = working[action_col].astype("string").str.strip().str.lower()
+                action_mask = action_vals.isin({"y", "yes"})
+            else:
+                action_mask = pd.Series(True, index=working.index)
+
+            keep_mask = reason_mask & action_mask
+            filtered = working.loc[keep_mask].copy()
+
+            # Sales Order Qty may be missing column; default to 0 where absent
+            if qty_col is None:
+                filtered_qty = pd.Series(0, index=filtered.index)
+            else:
+                filtered_qty = coerce_numeric_column(filtered[qty_col]).fillna(0)
+
+            filtered = filtered.assign(_upload_qty=filtered_qty)
+            upload_adjustments_df = (
+                filtered.groupby(ndc_col, dropna=False)["_upload_qty"]
+                .sum()
+                .rename("Upload_Qty")
+                .reset_index()
+                .rename(columns={ndc_col: "NDC"})
+            )
+            logger.info("Upload adjustments: %d rows aggregated into %d NDC groups", len(filtered), int(upload_adjustments_df["NDC"].nunique(dropna=True)))
+
+    # Optional source -- this pipeline generates Sales Summary as an output
+    # rather than requiring it as an input.
     sales_summary_df = _get_optional_sheet_dataframe(loaded_workbooks, "sales_summary")
 
-    inventory_result = build_ups_inventory(inventory_df, open_orders_df, config.phase2, logger)
+    # BUSINESS RULE: upload adjustments are netted out of UPS Inventory
+    # BEFORE the floor-to-zero step (see derived_inventory.build_ups_inventory).
+    inventory_result = build_ups_inventory(
+        inventory_df,
+        open_orders_df,
+        config.phase2,
+        logger,
+        upload_adjustments_df=upload_adjustments_df,
+    )
     if sales_summary_df is not None:
         lookup_result = build_lookup_keys(sales_summary_df, logger)
         moq_result = build_moq_validation(sales_summary_df, logger)
@@ -73,6 +140,7 @@ def run_phase2(loaded_workbooks: dict[str, WorkbookData], config: AppConfig, log
         moq_validation_df=moq_result.dataframe,
         statistics_df=statistics_df,
         output_path=output_path,
+        upload_adjustments_df=upload_adjustments_df,
     )
 
 

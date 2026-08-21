@@ -11,13 +11,19 @@ from modules.utils import coerce_numeric_column
 # case-insensitive substring matching against "Material Description".
 CONTROLLED_PRODUCT_KEYWORDS: tuple[str, ...] = (
     "APAP/Codeine",
+    "APAP",
+    "Hydro",
+    "Codeine",
     "BAC",
     "Gabapentin",
     "Hydro/Apap",
     "Oxycodone",
+    "sevel",
     "Phenobarbital",
     "Testosterone",
     "Tramadol",
+    "Hydro bit ",
+    "hydro bitrate",
     "Zolpidem",
 )
 

@@ -33,6 +33,7 @@ def build_ups_inventory(
     open_orders_df: pd.DataFrame,
     phase2_config: Phase2Config,
     logger,
+    upload_adjustments_df: pd.DataFrame | None = None,
 ) -> DerivedInventoryResult:
     """Build UPS inventory by netting filtered open order allocations against inventory."""
     _validate_required_columns(
@@ -144,13 +145,19 @@ def build_ups_inventory(
         logger.warning("Missing inventory for allocated NDC values: %s", len(missing_inventory_keys))
 
     derived = inventory_summary.merge(allocation_summary, on="NDC", how="outer")
+    # join optional upload adjustments (aggregated uploaded Sales Order Qty by NDC)
+    if upload_adjustments_df is not None and not upload_adjustments_df.empty:
+        derived = derived.merge(upload_adjustments_df, on="NDC", how="left")
+        derived["Upload_Qty"] = coerce_numeric_column(derived.get("Upload_Qty", pd.Series(dtype="float"))).fillna(0)
+        logger.info("Applying upload adjustments to UPS Inventory for %d NDCs", int(derived["NDC"].nunique(dropna=True)))
+    else:
+        derived["Upload_Qty"] = 0
+
     derived["Inventory"] = coerce_numeric_column(derived["Inventory"]).fillna(0)
     derived["Total"] = coerce_numeric_column(derived["Total"]).fillna(0)
-    # BUSINESS RULE: UPS Inventory is floored at 0. When open order Total
-    # exceeds the hold-code-eligible Inventory, the shortage is reported as 0
-    # available rather than a negative quantity. The underlying "Inventory"
-    # and "Total" columns are left untouched so the shortfall stays auditable.
-    derived["UPS Inventory"] = (derived["Inventory"] - derived["Total"]).clip(lower=0)
+    # BUSINESS RULE: UPS Inventory is Inventory - Total - Upload_Qty, floored at 0.
+    # The subtraction is performed before clipping so shortages are auditable in the Inventory/Total/Upload_Qty columns.
+    derived["UPS Inventory"] = (derived["Inventory"] - derived["Total"] - derived["Upload_Qty"]).clip(lower=0)
     derived = derived[["NDC", "Inventory", "Total", "UPS Inventory"]]
 
     missing_allocations = int((derived["Total"] == 0).sum())
