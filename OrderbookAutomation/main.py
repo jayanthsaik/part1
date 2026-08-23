@@ -148,7 +148,6 @@ def run_phase3(loaded_workbooks, config, logger):
         "moq": _first_sheet_dataframe(loaded_workbooks, "moq"),
         "inventory": _first_sheet_dataframe(loaded_workbooks, "inventory"),
         "open_orders": _first_sheet_dataframe(loaded_workbooks, "open_order_summary"),
-        "sales_summary": _first_sheet_dataframe(loaded_workbooks, "sales_summary"),
         "sales_trend": _first_sheet_dataframe(loaded_workbooks, "sales_trend"),
         "buying_groups": _first_sheet_dataframe(loaded_workbooks, "buying_groups"),
         "awards": _first_sheet_dataframe(loaded_workbooks, "awards"),

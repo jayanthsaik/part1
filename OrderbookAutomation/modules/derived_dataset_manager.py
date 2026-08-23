@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -13,9 +15,8 @@ from modules.derived_inventory import DerivedInventoryResult, build_ups_inventor
 from modules.loader import WorkbookData
 from modules.lookup_key_builder import LookupKeyResult, build_lookup_keys
 from modules.moq_validator import MoqValidationResult, build_moq_validation
-from modules.utils import normalize_ndc_key, coerce_numeric_column
-from typing import Optional
-import logging
+from modules.utils import coerce_numeric_column, normalize_ndc_key
+from modules.validator import DataValidationError
 
 
 @dataclass(frozen=True)
@@ -30,74 +31,174 @@ class Phase2Result:
     upload_adjustments_df: Optional[pd.DataFrame] = None
 
 
+def _normalize_header_name(value: object) -> str:
+    """Normalize a column name for tolerant matching.
+
+    Mirrors the normalization used by source discovery so that a file which
+    was successfully DISCOVERED can always be PARSED: collapses case,
+    leading/trailing/internal whitespace runs, and ``_``/``-`` separators.
+    """
+    text = str(value).replace("_", " ").replace("-", " ")
+    return " ".join(text.split()).casefold()
+
+
+def _prompt_quantity_source(logger) -> str:
+    """Ask which quantity source to use when BOTH are present.
+
+    Raises ``DataValidationError`` when no interactive console is available so
+    an unattended run (scheduled task / double-clicked EXE) can never silently
+    pick the wrong source and produce incorrect UPS Inventory values.
+    """
+    if not sys.stdin or not sys.stdin.isatty():
+        raise DataValidationError(
+            "Both a Morning Completed Order Book and an Upload Sheet were found "
+            "in the input folder, but this run is not interactive so the correct "
+            "source cannot be confirmed.\n\n"
+            "Remove ONE of the two files from the input folder and re-run."
+        )
+
+    print("\nBoth quantity sources were found in the input folder:")
+    print("  1. Morning Completed Order Book  (pre-processed, no filtering)")
+    print("  2. Upload Sheet                  (filtered on Reason Code / Action)")
+    while True:
+        answer = input("Which should be used for Sales Order Qty? [1/2]: ").strip()
+        if answer == "1":
+            logger.info("User selected Morning Completed Order Book.")
+            return "morning"
+        if answer == "2":
+            logger.info("User selected Upload Sheet.")
+            return "upload"
+        print("Please enter 1 or 2.")
+
+
+def _build_quantity_adjustments(
+    source_df: pd.DataFrame,
+    source_name: str,
+    apply_filters: bool,
+    logger,
+) -> pd.DataFrame:
+    """Aggregate Sales Order Qty by NDC from the chosen quantity source.
+
+    ONLY "NDC Code" and "Sales Order Qty" are read. For the Morning Completed
+    Order Book this is deliberate: its own "UPS Inventory" column is IGNORED
+    and UPS Inventory is always recomputed downstream as
+    MAX(0, Inventory - Total - Upload_Qty), so the value can never be
+    double-counted.
+
+    ``apply_filters=True``  -> Upload Sheet: keep only rows where Reason Code
+    is 1 or 4 AND Action is Y/Yes (both case-insensitive, numeric or text).
+
+    ``apply_filters=False`` -> Morning Completed Order Book: already processed,
+    so every row counts.
+    """
+    columns = {_normalize_header_name(column): column for column in source_df.columns}
+    ndc_column = columns.get("ndc code") or columns.get("ndc")
+    qty_column = columns.get("sales order qty")
+
+    if ndc_column is None or qty_column is None:
+        raise DataValidationError(
+            f"{source_name} is missing required columns "
+            "'NDC Code' and/or 'Sales Order Qty'."
+        )
+
+    working = source_df.copy()
+    total_rows = len(working)
+
+    if apply_filters:
+        reason_column = columns.get("reason code")
+        action_column = columns.get("action")
+        if reason_column is None or action_column is None:
+            raise DataValidationError(
+                f"{source_name} is missing 'Reason Code' and/or 'Action', which "
+                "are required to filter the upload sheet."
+            )
+        # Reason Code may arrive as 1, "1", or 1.0 (Excel float coercion).
+        reason_values = working[reason_column].map(_normalize_reason_code)
+        action_values = working[action_column].astype("string").str.strip().str.casefold()
+        working = working[reason_values.isin({"1", "4"}) & action_values.isin({"y", "yes"})].copy()
+
+    working[ndc_column] = working[ndc_column].map(
+        lambda value: normalize_ndc_key(value) if pd.notna(value) else value
+    )
+    working[qty_column] = coerce_numeric_column(working[qty_column]).fillna(0)
+
+    adjustments = (
+        working.groupby(ndc_column, dropna=True)[qty_column]
+        .sum()
+        .rename("Upload_Qty")
+        .reset_index()
+        .rename(columns={ndc_column: "NDC"})
+    )
+
+    logger.info(
+        "%s adjustments | source_rows=%s | rows_used=%s | ndc_groups=%s",
+        source_name,
+        total_rows,
+        len(working),
+        int(adjustments["NDC"].nunique(dropna=True)),
+    )
+    return adjustments
+
+
+def _normalize_reason_code(value: object) -> str:
+    """Return a Reason Code as a comparable string ("1", "4", ...).
+
+    Tolerates numeric, float ("1.0") and text representations.
+    """
+    if pd.isna(value):
+        return ""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value).strip()
+
+
 def run_phase2(loaded_workbooks: dict[str, WorkbookData], config: AppConfig, logger, execution_time_seconds: float) -> Phase2Result:
     """Generate all Phase 2 derived datasets from Phase 1 loaded workbooks."""
     inventory_df = _get_sheet_dataframe(loaded_workbooks, "inventory")
     open_orders_df = _get_sheet_dataframe(loaded_workbooks, "open_order_summary")
-    # optional upload-adjustments workbook (may be missing)
-    # Resolved by header signature via the source registry -- never by filename.
-    upload_df = _get_sheet_dataframe(loaded_workbooks, "upload_sheet")
-    upload_adjustments_df = None
-    if upload_df is None:
-        logger.warning(
-            "No Upload Sheet discovered in the input folder. UPS Inventory will be "
-            "calculated WITHOUT upload adjustments (Upload_Qty = 0). If an upload "
-            "sheet was provided, verify it contains the headers: "
-            "NDC Code, Reason Code, Action, Sales Order Qty."
+
+    # BUSINESS RULE: the Sales Order Qty used to adjust UPS Inventory comes
+    # from the Morning Completed Order Book when supplied, otherwise from the
+    # Upload Sheet. At least ONE of the two MUST be present. Both sources are
+    # resolved by header signature via the source registry -- never by
+    # filename -- so the client may name either file anything.
+    morning_df = _get_optional_sheet_dataframe(loaded_workbooks, "morning_completed_orderbook")
+    upload_df = _get_optional_sheet_dataframe(loaded_workbooks, "upload_sheet")
+
+    if morning_df is None and upload_df is None:
+        raise DataValidationError(
+            "No quantity source found.\n\n"
+            "This application requires EITHER a Morning Completed Order Book "
+            "OR an Upload Sheet in the input folder.\n\n"
+            "Place one of these files in the input folder and re-run."
         )
-    else:
-        # permissive header discovery
-        cols = {c.strip().lower(): c for c in upload_df.columns}
-        ndc_col = cols.get("ndc") or cols.get("ndc code") or cols.get("ndc_code") or None
-        reason_col = cols.get("reason code") or cols.get("reason_code") or None
-        action_col = cols.get("action") or None
-        qty_col = cols.get("sales order qty") or cols.get("sales_order_qty") or None
 
-        if ndc_col is None:
-            logger.warning("Upload adjustments sheet found but no NDC column located; ignoring upload adjustments")
+    if morning_df is not None and upload_df is not None:
+        choice = _prompt_quantity_source(logger)
+        if choice == "morning":
+            adjustment_df, adjustment_source_name, apply_filters = morning_df, "Morning Completed Order Book", False
         else:
-            working = upload_df.copy()
-            # normalize text
-            working[ndc_col] = working[ndc_col].astype("string").str.strip().map(lambda v: normalize_ndc_key(v) if pd.notna(v) else v)
+            adjustment_df, adjustment_source_name, apply_filters = upload_df, "Upload Sheet", True
+    elif morning_df is not None:
+        # Already processed -- no Reason Code / Action filtering.
+        adjustment_df, adjustment_source_name, apply_filters = morning_df, "Morning Completed Order Book", False
+    else:
+        adjustment_df, adjustment_source_name, apply_filters = upload_df, "Upload Sheet", True
 
-            # handle reason code (numeric or string)
-            if reason_col is not None:
-                reason_vals = working[reason_col].astype("string").str.strip().str.lower()
-                reason_mask = reason_vals.isin({"1", "4"})
-            else:
-                reason_mask = pd.Series(True, index=working.index)
+    logger.info(
+        "Sales Order Qty adjustment source: %s (row filtering=%s)",
+        adjustment_source_name,
+        "yes" if apply_filters else "no (pre-processed)",
+    )
 
-            # Action must be Y/Yes (case-insensitive)
-            if action_col is not None:
-                action_vals = working[action_col].astype("string").str.strip().str.lower()
-                action_mask = action_vals.isin({"y", "yes"})
-            else:
-                action_mask = pd.Series(True, index=working.index)
+    upload_adjustments_df = _build_quantity_adjustments(
+        adjustment_df,
+        adjustment_source_name,
+        apply_filters,
+        logger,
+    )
 
-            keep_mask = reason_mask & action_mask
-            filtered = working.loc[keep_mask].copy()
-
-            # Sales Order Qty may be missing column; default to 0 where absent
-            if qty_col is None:
-                filtered_qty = pd.Series(0, index=filtered.index)
-            else:
-                filtered_qty = coerce_numeric_column(filtered[qty_col]).fillna(0)
-
-            filtered = filtered.assign(_upload_qty=filtered_qty)
-            upload_adjustments_df = (
-                filtered.groupby(ndc_col, dropna=False)["_upload_qty"]
-                .sum()
-                .rename("Upload_Qty")
-                .reset_index()
-                .rename(columns={ndc_col: "NDC"})
-            )
-            logger.info("Upload adjustments: %d rows aggregated into %d NDC groups", len(filtered), int(upload_adjustments_df["NDC"].nunique(dropna=True)))
-
-    # Optional source -- this pipeline generates Sales Summary as an output
-    # rather than requiring it as an input.
-    sales_summary_df = _get_optional_sheet_dataframe(loaded_workbooks, "sales_summary")
-
-    # BUSINESS RULE: upload adjustments are netted out of UPS Inventory
+    # BUSINESS RULE: quantity adjustments are netted out of UPS Inventory
     # BEFORE the floor-to-zero step (see derived_inventory.build_ups_inventory).
     inventory_result = build_ups_inventory(
         inventory_df,
@@ -106,15 +207,19 @@ def run_phase2(loaded_workbooks: dict[str, WorkbookData], config: AppConfig, log
         logger,
         upload_adjustments_df=upload_adjustments_df,
     )
-    if sales_summary_df is not None:
-        lookup_result = build_lookup_keys(sales_summary_df, logger)
-        moq_result = build_moq_validation(sales_summary_df, logger)
-    else:
-        logger.warning(
-            "Optional 'sales_summary' input not found; skipping Lookup Key and MOQ Validation derived datasets for this run."
-        )
-        lookup_result = LookupKeyResult(dataframe=pd.DataFrame(), total_rows=0, values_normalized=0, duplicate_lookup_keys=0)
-        moq_result = MoqValidationResult(dataframe=pd.DataFrame(), failure_count=0)
+
+    # Lookup Key and MOQ Validation derived datasets were historically built
+    # from an optional "sales_summary" INPUT. That source has been removed:
+    # Sales Summary is generated by this pipeline as an OUTPUT, and both
+    # derived datasets are now superseded downstream -- Phase 3 builds the
+    # canonical Lookup itself (see master_builder._ensure_lookup) and the MOQ
+    # rule is computed directly from the Orderbook's own Sales Order Qty /
+    # Pack Size (MOQ) columns (see business_rules / report_formatter). They are
+    # retained as empty, correctly-shaped results purely so the Phase 2
+    # statistics sheet and the DEBUG-only derived workbook keep their schema.
+    lookup_result = LookupKeyResult(dataframe=pd.DataFrame(), total_rows=0, values_normalized=0, duplicate_lookup_keys=0)
+    moq_result = MoqValidationResult(dataframe=pd.DataFrame(), failure_count=0)
+
     statistics_df = _build_statistics(inventory_result, lookup_result, moq_result, execution_time_seconds)
 
     output_path = config.output_dir / config.phase2.derived_workbook_name

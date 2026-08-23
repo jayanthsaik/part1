@@ -139,20 +139,47 @@ SOURCE_DEFINITIONS: dict[str, SourceDefinition] = {
         preferred_sheet_names=("Sheet1",),
         filename_hint="Critical Inventory / CIP tracker export",
     ),
-    "sales_summary": SourceDefinition(
-        logical_name="sales_summary",
-        display_name="Sales Summary",
-        required_headers=("Sales Order No.", "NDC Code", "Lookup"),
-        optional_headers=("Pack Size (MOQ)", "Sales Order Qty", "Sales Qty MTD", "Forecast Qty"),
+    "morning_completed_orderbook": SourceDefinition(
+        logical_name="morning_completed_orderbook",
+        display_name="Morning Completed Order Book",
+        # Pre-processed/completed orderbook produced by the morning run.
+        #
+        # ONLY "Sales Order Qty" is consumed from this file -- every other
+        # column (INCLUDING its own "UPS Inventory") is deliberately ignored.
+        # UPS Inventory is always recomputed as
+        # MAX(0, Inventory - Total - Sales Order Qty) so this file can never
+        # double-count.
+        #
+        # Because the data is already processed, NO row filtering is applied
+        # (unlike upload_sheet, which filters on Reason Code / Action).
+        #
+        # DISCRIMINATORS: "UPS Inventory" and "Sales Value (FC)" appear in no
+        # other registered source. Both are kept required so a single upstream
+        # column change cannot cause a mis-match. Note this file also carries
+        # "Pack Size (MOQ)" (spaced), which is distinct from the Orderbook's
+        # "PackSize(MOQ)" (unspaced), so it can never match 'orderbook'.
+        required_headers=(
+            "Sales Order No.",
+            "NDC Code",
+            "Sales Order Qty",
+            "UPS Inventory",
+            "Sales Value (FC)",
+        ),
+        optional_headers=(
+            "Item No.",
+            "Lookup",
+            "Material Description",
+            "Pack Size (MOQ)",
+            "Sold-to party Name",
+            "Action",
+            "Reason for Rejection",
+            "DEA Number (Customer Master)",
+        ),
         preferred_sheet_names=("Sheet1",),
-        # NOTE: the pipeline actually GENERATES a "Sales Summary" as an
-        # OUTPUT (see Sales_Summary.xlsx in phase4_manager.py) rather than
-        # receiving one as a business input in the current workflow. This
-        # source is therefore optional (mandatory=False): if no matching
-        # workbook is found in the input folder, discovery simply omits it
-        # instead of failing the whole pipeline. Phase 2/3 code paths that
-        # reference this source already tolerate a missing/empty dataframe.
-        filename_hint="Sales summary export (optional; not required for this workflow)",
+        filename_hint="Morning completed/processed order book",
+        filename_keywords=("morning", "completed"),
+        # Not individually mandatory -- the PAIR (this OR upload_sheet) is
+        # enforced in derived_dataset_manager.run_phase2().
         mandatory=False,
     ),
     "sales_trend": SourceDefinition(

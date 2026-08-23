@@ -13,10 +13,11 @@ from modules.historical_sales import build_historical_sales, determine_reporting
 from modules.report_formatter import (
     apply_business_rule_formatting,
     apply_low_ups_inventory_formatting,
+    apply_summary_action_formatting,
     save_workbook,
     write_dataframe_sheet,
 )
-from modules.sales_summary_builder import build_sales_summary_aggregation
+from modules.sales_summary_builder import SUMMARY_ACTION_FLAG_COLUMN, build_sales_summary_aggregation
 from modules.utils import normalize_ndc_key, normalize_text_key
 
 # Final Orderbook sheet column order/headers, matching the authoritative
@@ -206,6 +207,14 @@ def _build_summary_dataframe(
     for column in ordered_columns:
         if column not in working.columns:
             working[column] = pd.NA
+
+    # Internal-only diagnostic column carried as the LAST column so it never
+    # disturbs the documented SOP column order above. It is consumed by
+    # report_formatter.apply_summary_action_formatting and is stripped from
+    # the client-facing sheet by _to_reference_summary_dataframe.
+    if SUMMARY_ACTION_FLAG_COLUMN not in working.columns:
+        working[SUMMARY_ACTION_FLAG_COLUMN] = pd.NA
+    ordered_columns = ordered_columns + [SUMMARY_ACTION_FLAG_COLUMN]
 
     return working[ordered_columns]
 
@@ -422,6 +431,14 @@ def run_phase4(
             "Sales Summary low UPS Inventory highlight | highlighted_cells=%s",
             low_inventory_highlight_count,
         )
+        sales_summary_cancel_rows, sales_summary_hold_rows = apply_summary_action_formatting(
+            sales_summary_ws, summary_df
+        )
+        logger.info(
+            "Sales Summary Action row colouring | cancel_rows=%s | hold_rows=%s",
+            sales_summary_cancel_rows,
+            sales_summary_hold_rows,
+        )
 
         audit_df = pd.DataFrame(
             [
@@ -488,6 +505,19 @@ def run_phase4(
         pob_summary_highlight_count,
     )
 
+    # BUSINESS RULE: the Orderbook sheet's Cancel = red / Hold = blue row
+    # colouring is mirrored onto the aggregated Summary sheet, using the
+    # rollup flag computed during aggregation (any Cancel -> Cancel, else
+    # any Hold -> Hold). Applied AFTER the yellow highlight above so a
+    # Cancel/Hold row takes full precedence, exactly as on the Orderbook
+    # sheet.
+    summary_cancel_rows, summary_hold_rows = apply_summary_action_formatting(summary_ws, summary_df)
+    logger.info(
+        "POB Summary Action row colouring | cancel_rows=%s | hold_rows=%s",
+        summary_cancel_rows,
+        summary_hold_rows,
+    )
+
     # Internal audit/debug sheets (Sales Summary, Pivot, Audit, Exceptions)
     # are generated internally in Sales_Summary.xlsx above. They are
     # intentionally NOT included in the client-facing POB.xlsx per the
@@ -500,6 +530,7 @@ def run_phase4(
     if include_internal_sheets:
         internal_summary_ws = write_dataframe_sheet(pob_workbook, "Sales Summary", summary_df)
         apply_low_ups_inventory_formatting(internal_summary_ws)
+        apply_summary_action_formatting(internal_summary_ws, summary_df)
         write_dataframe_sheet(pob_workbook, "Pivot", aggregated_df)
 
         pob_audit_rows = {

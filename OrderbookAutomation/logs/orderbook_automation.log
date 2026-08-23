@@ -1158,3 +1158,373 @@ ValueError: Required workbook 'upload_sheet' not found in loaded workbook set
 2026-08-21 09:10:18,279 | INFO | Wrote final POB workbook to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
 2026-08-21 09:10:18,279 | INFO | Phase 4 completed successfully. POB saved to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
 2026-08-21 09:10:18,280 | INFO | Workflow completed successfully in 1.31 seconds
+2026-08-21 09:30:01,400 | INFO | Removed stale application-generated output files: POB.xlsx
+2026-08-21 09:30:01,400 | INFO | Starting Orderbook automation workflow
+2026-08-21 09:30:01,400 | INFO | Application root=G:\Support\orderbook\part1\OrderbookAutomation | input_dir=G:\Support\orderbook\part1\OrderbookAutomation\input | output_dir=G:\Support\orderbook\part1\OrderbookAutomation\output | debug_mode=False
+2026-08-21 09:30:01,428 | INFO | Discovery scan | file=Awards.xlsx | sheet=Sheet1 | header_row=0 | header_count=7
+2026-08-21 09:30:01,448 | INFO | Discovery scan | file=Buying_groups.xlsx | sheet=Sheet1 | header_row=0 | header_count=2
+2026-08-21 09:30:01,454 | INFO | Discovery scan | file=CIP.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-21 09:30:01,470 | INFO | Discovery scan | file=inv_21-08.xlsx | sheet=Sheet1 | header_row=0 | header_count=13
+2026-08-21 09:30:01,520 | INFO | Discovery scan | file=MOQ.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-21 09:30:01,570 | INFO | Discovery scan | file=Open_Order_Summary.xlsx | sheet=Sheet1 | header_row=3 | header_count=21
+2026-08-21 09:30:01,622 | INFO | Discovery scan | file=raw_OB.xlsx | sheet=UOB | header_row=0 | header_count=34
+2026-08-21 09:30:01,655 | INFO | Discovery scan | file=sales_summ.xlsx | sheet=Sheet1 | header_row=0 | header_count=37
+2026-08-21 09:30:01,704 | INFO | Discovery scan | file=Strend.xlsx | sheet=Sheet1 | header_row=3 | header_count=66
+2026-08-21 09:30:01,761 | INFO | Discovery scan | file=upload sheet.xlsx | sheet=Sheet1 | header_row=0 | header_count=9
+2026-08-21 09:30:01,762 | INFO | Resolved source 'orderbook' (Orderbook) -> file=raw_OB.xlsx | sheet=UOB
+2026-08-21 09:30:01,762 | INFO | Resolved source 'moq' (Material Description / MOQ Master) -> file=MOQ.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,762 | INFO | Resolved source 'inventory' (Daily Inventory) -> file=inv_21-08.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,762 | INFO | Resolved source 'open_order_summary' (Open Order Summary) -> file=Open_Order_Summary.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,763 | INFO | Resolved source 'buying_groups' (Buying Groups) -> file=Buying_groups.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,763 | INFO | Resolved source 'awards' (Awards) -> file=Awards.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,763 | INFO | Resolved source 'critical_inventory_tracker' (Critical Inventory Tracker (CIP)) -> file=CIP.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,763 | INFO | Resolved source 'sales_summary' (Sales Summary) -> file=sales_summ.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,764 | INFO | Resolved source 'sales_trend' (Sales Trend (Strend)) -> file=Strend.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,764 | INFO | Resolved source 'upload_sheet' (Upload Sheet) -> file=upload sheet.xlsx | sheet=Sheet1
+2026-08-21 09:30:01,793 | INFO | Loaded workbook=raw_OB.xlsx sheet=UOB rows=8 cols=34
+2026-08-21 09:30:01,805 | INFO | Loaded workbook=MOQ.xlsx sheet=Sheet1 rows=4 cols=4
+2026-08-21 09:30:01,822 | INFO | Loaded workbook=inv_21-08.xlsx sheet=Sheet1 rows=16 cols=13
+2026-08-21 09:30:01,848 | INFO | Loaded workbook=Open_Order_Summary.xlsx sheet=Sheet1 rows=7 cols=21
+2026-08-21 09:30:01,887 | INFO | Loaded workbook=Buying_groups.xlsx sheet=Sheet1 rows=677 cols=2
+2026-08-21 09:30:01,910 | INFO | Loaded workbook=Awards.xlsx sheet=Sheet1 rows=129 cols=7
+2026-08-21 09:30:01,928 | INFO | Loaded workbook=CIP.xlsx sheet=Sheet1 rows=10 cols=4
+2026-08-21 09:30:01,941 | INFO | Loaded workbook=sales_summ.xlsx sheet=Sheet1 rows=1 cols=37
+2026-08-21 09:30:02,104 | INFO | Loaded workbook=Strend.xlsx sheet=Sheet1 rows=101 cols=66
+2026-08-21 09:30:02,127 | INFO | Loaded workbook=upload sheet.xlsx sheet=Sheet1 rows=8 cols=9
+2026-08-21 09:30:02,153 | WARNING | EMPTY_COLUMNS | workbook=Orderbook | worksheet=UOB | Completely blank columns: ['Floor limit Blk', 'Multiple of MOQ Blk', 'Expected Price Blk', 'SOM Indc.']
+2026-08-21 09:30:02,153 | WARNING | EMPTY_COLUMNS | workbook=Sales Summary | worksheet=Sheet1 | Completely blank columns: ['Action', 'Floor limit Blk', 'Multiple of MOQ Blk', 'Expected Price Blk', 'SOM Indc.']
+2026-08-21 09:30:02,154 | WARNING | BLANK_HEADERS | workbook=Sales Trend (Strend) | worksheet=Sheet1 | Blank raw headers found: 3
+2026-08-21 09:30:02,154 | WARNING | BLANK_HEADERS | workbook=Upload Sheet | worksheet=Sheet1 | Blank raw headers found: 1
+2026-08-21 09:30:02,177 | INFO | Upload adjustments: 7 rows aggregated into 5 NDC groups
+2026-08-21 09:30:02,177 | WARNING | Duplicate inventory NDC values detected: 12
+2026-08-21 09:30:02,186 | INFO | UPS Inventory Hold Code Filter | total_inventory_rows=16 | blank_hold_codes=7 | excluded_hold_codes=9 | unique_ndcs_before=4 | unique_ndcs_after=3 | inventory_before_filter=40488.0 | inventory_after_filter=34152.0
+2026-08-21 09:30:02,194 | WARNING | Missing inventory for allocated NDC values: 1
+2026-08-21 09:30:02,194 | INFO | Applying upload adjustments to UPS Inventory for 4 NDCs
+2026-08-21 09:30:02,207 | INFO | Derived inventory stats | inventory_rows=3 | allocated_rows=3 | unique_ndcs=4 | missing_inventory=1 | missing_allocations=1
+2026-08-21 09:30:02,209 | INFO | Lookup key stats | total_rows=1 | values_normalized=0 | successful_matches=1 | unmatched_records=0 | duplicate_lookup_keys=0
+2026-08-21 09:30:02,216 | INFO | MOQ validation stats | total_rows=1 | values_normalized=0 | successful_matches=1 | unmatched_records=0 | duplicate_lookup_keys=0
+2026-08-21 09:30:02,218 | INFO | Phase 2 derived datasets kept in memory (production mode; no intermediate workbook written)
+2026-08-21 09:30:02,218 | INFO | Phase 2 completed successfully
+2026-08-21 09:30:02,229 | INFO | Lookup construction stats | total_rows=8 | rows_with_ndc=8 | rows_with_sold_to_party_name=8 | rows_with_valid_lookup=8 | rows_missing_lookup=0
+2026-08-21 09:30:02,251 | INFO | 07-30_inv.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=4 | unmatched_records=4 | duplicate_lookup_keys=12
+2026-08-21 09:30:02,251 | INFO | 07-30_inv.xlsx merged using NDC Code | rows updated=4 | rows missing=3 | duplicate keys=12
+2026-08-21 09:30:02,258 | INFO | Open_Order_Summary.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=3
+2026-08-21 09:30:02,258 | INFO | Open_Order_Summary.xlsx merged using Sold To Party Name | rows updated=0 | rows missing=4 | duplicate keys=3
+2026-08-21 09:30:02,291 | INFO | sales_summ.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=0
+2026-08-21 09:30:02,291 | INFO | sales_summ.xlsx merged using Lookup | rows updated=0 | rows missing=1 | duplicate keys=0
+2026-08-21 09:30:02,314 | INFO | Strend.xlsx lookup stats | total_rows=8 | values_normalized=91 | successful_matches=8 | unmatched_records=0 | duplicate_lookup_keys=0
+2026-08-21 09:30:02,314 | INFO | Strend.xlsx merged using Lookup | rows updated=8 | rows missing=99 | duplicate keys=0
+2026-08-21 09:30:02,332 | INFO | CIP.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=0
+2026-08-21 09:30:02,332 | INFO | CIP.xlsx merged using NDC Code | rows updated=0 | rows missing=10 | duplicate keys=0
+2026-08-21 09:30:02,349 | INFO | Buying Group source loaded | source=Buying_groups.xlsx | priority=1 | raw_rows=677 | unique_customers=11 | exact_duplicates_removed=666 | same_tier_conflicts=0
+2026-08-21 09:30:02,377 | INFO | Buying Group source loaded | source=Strend.xlsx | priority=2 | raw_rows=101 | unique_customers=53 | exact_duplicates_removed=48 | same_tier_conflicts=0
+2026-08-21 09:30:02,388 | INFO | Buying Group source loaded | source=Open_Order_Summary.xlsx | priority=3 | raw_rows=7 | unique_customers=4 | exact_duplicates_removed=3 | same_tier_conflicts=0
+2026-08-21 09:30:02,427 | INFO | Buying Group multi-source lookup | total_master_rows=8 | rows_after_merge=8 | unique_master_customers=1 | unique_source_customers=56 | exact_duplicates_removed=717 | same_priority_conflicts=0 | lower_priority_disagreements=2 | matched_rows=8 | not_found_rows=0 | duplicate_conflict_rows=0 | populated_rows=8 | blank_rows=0 | matches_by_source={'Strend.xlsx': 8}
+2026-08-21 09:30:02,471 | INFO | Award lookup stats | source_rows=129 | total_master_rows=8 | rows_after_merge=8 | matched=0 (lookup=0, ndc=0) | not_found=8 | duplicate_conflict=0 | populated=0 | blank=8 | exact_duplicate_source_rows_removed=0 | conflicting_ndcs=2
+2026-08-21 09:30:02,477 | INFO | Lookup construction stats | total_rows=8 | rows_with_ndc=8 | rows_with_sold_to_party_name=8 | rows_with_valid_lookup=8 | rows_missing_lookup=0
+2026-08-21 09:30:02,477 | INFO | Business Master dataset kept in memory (production mode; no intermediate workbook written)
+2026-08-21 09:30:02,477 | INFO | Phase 3 completed successfully
+2026-08-21 09:30:02,487 | INFO | Determined reporting period from 'PO date': 2026-07
+2026-08-21 09:30:02,488 | INFO | Historical sales stats | reporting_period=2026-07 | matched=8 | missing=0 | duplicate_keys=0
+2026-08-21 09:30:02,523 | INFO | SC Comments lookup stats | source_rows=10 | unique_source_ndcs=10 | total_master_rows=8 | rows_after_merge=8 | matched=0 | not_found=8 | duplicate_conflict=0 | populated=0 | blank=8 | exact_duplicate_source_rows_removed=0 | conflicting_ndcs=0 | used_date_column=False
+2026-08-21 09:30:02,529 | INFO | Phase 4 enrichment stats | ups_inventory_matches=8 | moq_matches=0 | sc_comments_matches=0 | sc_comments_missing=8 | buying_group_missing=0 | award_missing=8
+2026-08-21 09:30:02,529 | INFO | Phase 2 MOQ_Issue column 'MOQ_Issue' present but ignored; computing MOQ issues from Orderbook columns
+2026-08-21 09:30:02,529 | INFO | Business rules applied | controlled_products=0 | price_issues=0 | moq_issues=0 | low_ups_inventory=4
+2026-08-21 09:30:02,541 | INFO | Historical sales merge stats | matched=8 | missing=0
+2026-08-21 09:30:02,555 | INFO | Sales Summary aggregation stats | rows=2 | unique_lookups=2 | duplicate_lookups=0
+2026-08-21 09:30:02,561 | INFO | Sales Summary kept in memory (production mode; no intermediate workbook written)
+2026-08-21 09:30:02,561 | INFO | Orderbook grain validation passed | master_rows=8 | orderbook_rows=8 | dropped_records=0
+2026-08-21 09:30:02,624 | INFO | POB Summary low UPS Inventory highlight | highlighted_cells=1
+2026-08-21 09:30:02,649 | INFO | Wrote final POB workbook to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
+2026-08-21 09:30:02,649 | INFO | Phase 4 completed successfully. POB saved to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
+2026-08-21 09:30:02,649 | INFO | Workflow completed successfully in 1.25 seconds
+2026-08-23 10:37:50,933 | INFO | Removed stale application-generated output files: POB.xlsx
+2026-08-23 10:37:50,933 | INFO | Starting Orderbook automation workflow
+2026-08-23 10:37:50,933 | INFO | Application root=G:\Support\orderbook\part1\OrderbookAutomation | input_dir=G:\Support\orderbook\part1\OrderbookAutomation\input | output_dir=G:\Support\orderbook\part1\OrderbookAutomation\output | debug_mode=False
+2026-08-23 10:37:50,983 | INFO | Discovery scan | file=Awards.xlsx | sheet=Sheet1 | header_row=0 | header_count=7
+2026-08-23 10:37:51,000 | INFO | Discovery scan | file=Buying_groups.xlsx | sheet=Sheet1 | header_row=0 | header_count=2
+2026-08-23 10:37:51,016 | INFO | Discovery scan | file=CIP.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 10:37:51,033 | INFO | Discovery scan | file=inv_21-08.xlsx | sheet=Sheet1 | header_row=0 | header_count=13
+2026-08-23 10:37:51,083 | INFO | Discovery scan | file=MOQ.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 10:37:51,125 | INFO | Discovery scan | file=Open_Order_Summary.xlsx | sheet=Sheet1 | header_row=3 | header_count=21
+2026-08-23 10:37:51,166 | INFO | Discovery scan | file=raw_OB.xlsx | sheet=UOB | header_row=0 | header_count=34
+2026-08-23 10:37:51,199 | INFO | Discovery scan | file=sales_summ.xlsx | sheet=Sheet1 | header_row=0 | header_count=37
+2026-08-23 10:37:51,255 | INFO | Discovery scan | file=Strend.xlsx | sheet=Sheet1 | header_row=3 | header_count=66
+2026-08-23 10:37:51,267 | INFO | Discovery scan | file=upload sheet.xlsx | sheet=Sheet1 | header_row=0 | header_count=9
+2026-08-23 10:37:51,267 | INFO | Resolved source 'orderbook' (Orderbook) -> file=raw_OB.xlsx | sheet=UOB
+2026-08-23 10:37:51,267 | INFO | Resolved source 'moq' (Material Description / MOQ Master) -> file=MOQ.xlsx | sheet=Sheet1
+2026-08-23 10:37:51,267 | INFO | Resolved source 'inventory' (Daily Inventory) -> file=inv_21-08.xlsx | sheet=Sheet1
+2026-08-23 10:37:51,267 | INFO | Resolved source 'open_order_summary' (Open Order Summary) -> file=Open_Order_Summary.xlsx | sheet=Sheet1
+2026-08-23 10:37:51,267 | INFO | Resolved source 'buying_groups' (Buying Groups) -> file=Buying_groups.xlsx | sheet=Sheet1
+2026-08-23 10:37:51,267 | INFO | Resolved source 'awards' (Awards) -> file=Awards.xlsx | sheet=Sheet1
+2026-08-23 10:37:51,267 | INFO | Resolved source 'critical_inventory_tracker' (Critical Inventory Tracker (CIP)) -> file=CIP.xlsx | sheet=Sheet1
+2026-08-23 10:37:51,267 | WARNING | Optional source 'morning_completed_orderbook' (Morning Completed Order Book) not found in input folder; skipping (not required for this workflow).
+2026-08-23 10:37:51,267 | INFO | Resolved source 'sales_trend' (Sales Trend (Strend)) -> file=Strend.xlsx | sheet=Sheet1
+2026-08-23 10:37:51,267 | INFO | Resolved source 'upload_sheet' (Upload Sheet) -> file=upload sheet.xlsx | sheet=Sheet1
+2026-08-23 10:37:51,299 | INFO | Loaded workbook=raw_OB.xlsx sheet=UOB rows=8 cols=34
+2026-08-23 10:37:51,316 | INFO | Loaded workbook=MOQ.xlsx sheet=Sheet1 rows=4 cols=4
+2026-08-23 10:37:51,332 | INFO | Loaded workbook=inv_21-08.xlsx sheet=Sheet1 rows=16 cols=13
+2026-08-23 10:37:51,349 | INFO | Loaded workbook=Open_Order_Summary.xlsx sheet=Sheet1 rows=7 cols=21
+2026-08-23 10:37:51,383 | INFO | Loaded workbook=Buying_groups.xlsx sheet=Sheet1 rows=677 cols=2
+2026-08-23 10:37:51,416 | INFO | Loaded workbook=Awards.xlsx sheet=Sheet1 rows=129 cols=7
+2026-08-23 10:37:51,425 | INFO | Loaded workbook=CIP.xlsx sheet=Sheet1 rows=10 cols=4
+2026-08-23 10:37:51,583 | INFO | Loaded workbook=Strend.xlsx sheet=Sheet1 rows=101 cols=66
+2026-08-23 10:37:51,600 | INFO | Loaded workbook=upload sheet.xlsx sheet=Sheet1 rows=8 cols=9
+2026-08-23 10:37:51,616 | WARNING | EMPTY_COLUMNS | workbook=Orderbook | worksheet=UOB | Completely blank columns: ['Floor limit Blk', 'Multiple of MOQ Blk', 'Expected Price Blk', 'SOM Indc.']
+2026-08-23 10:37:51,616 | INFO | MISSING_OPTIONAL_WORKBOOK | workbook=Morning Completed Order Book | worksheet= | The 'Morning Completed Order Book' source was not loaded. Hint: Morning completed/processed order book.
+2026-08-23 10:37:51,616 | WARNING | BLANK_HEADERS | workbook=Sales Trend (Strend) | worksheet=Sheet1 | Blank raw headers found: 3
+2026-08-23 10:37:51,617 | WARNING | BLANK_HEADERS | workbook=Upload Sheet | worksheet=Sheet1 | Blank raw headers found: 1
+2026-08-23 10:37:51,617 | INFO | Sales Order Qty adjustment source: Upload Sheet (row filtering=yes)
+2026-08-23 10:37:51,617 | INFO | Upload Sheet adjustments | source_rows=8 | rows_used=7 | ndc_groups=5
+2026-08-23 10:37:51,617 | WARNING | Duplicate inventory NDC values detected: 12
+2026-08-23 10:37:51,617 | INFO | UPS Inventory Hold Code Filter | total_inventory_rows=16 | blank_hold_codes=7 | excluded_hold_codes=9 | unique_ndcs_before=4 | unique_ndcs_after=3 | inventory_before_filter=40488.0 | inventory_after_filter=34152.0
+2026-08-23 10:37:51,626 | WARNING | Missing inventory for allocated NDC values: 1
+2026-08-23 10:37:51,633 | INFO | Applying upload adjustments to UPS Inventory for 4 NDCs
+2026-08-23 10:37:51,633 | INFO | Derived inventory stats | inventory_rows=3 | allocated_rows=3 | unique_ndcs=4 | missing_inventory=1 | missing_allocations=1
+2026-08-23 10:37:51,633 | INFO | Phase 2 derived datasets kept in memory (production mode; no intermediate workbook written)
+2026-08-23 10:37:51,633 | INFO | Phase 2 completed successfully
+2026-08-23 10:37:51,633 | INFO | Lookup construction stats | total_rows=8 | rows_with_ndc=8 | rows_with_sold_to_party_name=8 | rows_with_valid_lookup=8 | rows_missing_lookup=0
+2026-08-23 10:37:51,651 | INFO | 07-30_inv.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=4 | unmatched_records=4 | duplicate_lookup_keys=12
+2026-08-23 10:37:51,651 | INFO | 07-30_inv.xlsx merged using NDC Code | rows updated=4 | rows missing=3 | duplicate keys=12
+2026-08-23 10:37:51,666 | INFO | Open_Order_Summary.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=3
+2026-08-23 10:37:51,666 | INFO | Open_Order_Summary.xlsx merged using Sold To Party Name | rows updated=0 | rows missing=4 | duplicate keys=3
+2026-08-23 10:37:51,684 | INFO | Strend.xlsx lookup stats | total_rows=8 | values_normalized=91 | successful_matches=8 | unmatched_records=0 | duplicate_lookup_keys=0
+2026-08-23 10:37:51,684 | INFO | Strend.xlsx merged using Lookup | rows updated=8 | rows missing=99 | duplicate keys=0
+2026-08-23 10:37:51,701 | INFO | CIP.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=0
+2026-08-23 10:37:51,701 | INFO | CIP.xlsx merged using NDC Code | rows updated=0 | rows missing=10 | duplicate keys=0
+2026-08-23 10:37:51,726 | INFO | Buying Group source loaded | source=Buying_groups.xlsx | priority=1 | raw_rows=677 | unique_customers=11 | exact_duplicates_removed=666 | same_tier_conflicts=0
+2026-08-23 10:37:51,750 | INFO | Buying Group source loaded | source=Strend.xlsx | priority=2 | raw_rows=101 | unique_customers=53 | exact_duplicates_removed=48 | same_tier_conflicts=0
+2026-08-23 10:37:51,766 | INFO | Buying Group source loaded | source=Open_Order_Summary.xlsx | priority=3 | raw_rows=7 | unique_customers=4 | exact_duplicates_removed=3 | same_tier_conflicts=0
+2026-08-23 10:37:51,801 | INFO | Buying Group multi-source lookup | total_master_rows=8 | rows_after_merge=8 | unique_master_customers=1 | unique_source_customers=56 | exact_duplicates_removed=717 | same_priority_conflicts=0 | lower_priority_disagreements=2 | matched_rows=8 | not_found_rows=0 | duplicate_conflict_rows=0 | populated_rows=8 | blank_rows=0 | matches_by_source={'Strend.xlsx': 8}
+2026-08-23 10:37:51,834 | INFO | Award lookup stats | source_rows=129 | total_master_rows=8 | rows_after_merge=8 | matched=0 (lookup=0, ndc=0) | not_found=8 | duplicate_conflict=0 | populated=0 | blank=8 | exact_duplicate_source_rows_removed=0 | conflicting_ndcs=2
+2026-08-23 10:37:51,834 | INFO | Lookup construction stats | total_rows=8 | rows_with_ndc=8 | rows_with_sold_to_party_name=8 | rows_with_valid_lookup=8 | rows_missing_lookup=0
+2026-08-23 10:37:51,834 | INFO | Business Master dataset kept in memory (production mode; no intermediate workbook written)
+2026-08-23 10:37:51,834 | INFO | Phase 3 completed successfully
+2026-08-23 10:37:51,851 | INFO | Determined reporting period from 'PO date': 2026-07
+2026-08-23 10:37:51,851 | INFO | Historical sales stats | reporting_period=2026-07 | matched=8 | missing=0 | duplicate_keys=0
+2026-08-23 10:37:51,851 | WARNING | MOQ_Issue could not be merged into the final dataset (missing source or key column)
+2026-08-23 10:37:51,872 | INFO | SC Comments lookup stats | source_rows=10 | unique_source_ndcs=10 | total_master_rows=8 | rows_after_merge=8 | matched=0 | not_found=8 | duplicate_conflict=0 | populated=0 | blank=8 | exact_duplicate_source_rows_removed=0 | conflicting_ndcs=0 | used_date_column=False
+2026-08-23 10:37:51,872 | INFO | Phase 4 enrichment stats | ups_inventory_matches=8 | moq_matches=0 | sc_comments_matches=0 | sc_comments_missing=8 | buying_group_missing=0 | award_missing=8
+2026-08-23 10:37:51,872 | INFO | Phase 2 MOQ_Issue column 'MOQ_Issue' present but ignored; computing MOQ issues from Orderbook columns
+2026-08-23 10:37:51,883 | INFO | Business rules applied | controlled_products=0 | price_issues=0 | moq_issues=0 | low_ups_inventory=4
+2026-08-23 10:37:51,885 | INFO | Historical sales merge stats | matched=8 | missing=0
+2026-08-23 10:37:51,885 | INFO | Sales Summary aggregation stats | rows=2 | unique_lookups=2 | duplicate_lookups=0
+2026-08-23 10:37:51,899 | INFO | Sales Summary kept in memory (production mode; no intermediate workbook written)
+2026-08-23 10:37:51,899 | INFO | Orderbook grain validation passed | master_rows=8 | orderbook_rows=8 | dropped_records=0
+2026-08-23 10:37:51,934 | INFO | POB Summary low UPS Inventory highlight | highlighted_cells=1
+2026-08-23 10:37:51,951 | INFO | Wrote final POB workbook to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
+2026-08-23 10:37:51,951 | INFO | Phase 4 completed successfully. POB saved to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
+2026-08-23 10:37:51,951 | INFO | Workflow completed successfully in 1.01 seconds
+2026-08-23 10:38:20,082 | INFO | Removed stale application-generated output files: POB.xlsx
+2026-08-23 10:38:20,082 | INFO | Starting Orderbook automation workflow
+2026-08-23 10:38:20,082 | INFO | Application root=G:\Support\orderbook\part1\OrderbookAutomation | input_dir=G:\Support\orderbook\part1\OrderbookAutomation\input | output_dir=G:\Support\orderbook\part1\OrderbookAutomation\output | debug_mode=False
+2026-08-23 10:38:20,099 | INFO | Discovery scan | file=Awards.xlsx | sheet=Sheet1 | header_row=0 | header_count=7
+2026-08-23 10:38:20,115 | INFO | Discovery scan | file=Buying_groups.xlsx | sheet=Sheet1 | header_row=0 | header_count=2
+2026-08-23 10:38:20,166 | INFO | Discovery scan | file=CIP.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 10:38:20,199 | INFO | Discovery scan | file=inv_21-08.xlsx | sheet=Sheet1 | header_row=0 | header_count=13
+2026-08-23 10:38:20,221 | INFO | Discovery scan | file=MOQ.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 10:38:20,257 | INFO | Discovery scan | file=Open_Order_Summary.xlsx | sheet=Sheet1 | header_row=3 | header_count=21
+2026-08-23 10:38:20,282 | INFO | Discovery scan | file=raw_OB.xlsx | sheet=UOB | header_row=0 | header_count=34
+2026-08-23 10:38:20,299 | INFO | Discovery scan | file=sales_summ.xlsx | sheet=Sheet1 | header_row=0 | header_count=37
+2026-08-23 10:38:20,349 | INFO | Discovery scan | file=Strend.xlsx | sheet=Sheet1 | header_row=3 | header_count=66
+2026-08-23 10:38:20,349 | INFO | Resolved source 'orderbook' (Orderbook) -> file=raw_OB.xlsx | sheet=UOB
+2026-08-23 10:38:20,349 | INFO | Resolved source 'moq' (Material Description / MOQ Master) -> file=MOQ.xlsx | sheet=Sheet1
+2026-08-23 10:38:20,349 | INFO | Resolved source 'inventory' (Daily Inventory) -> file=inv_21-08.xlsx | sheet=Sheet1
+2026-08-23 10:38:20,349 | INFO | Resolved source 'open_order_summary' (Open Order Summary) -> file=Open_Order_Summary.xlsx | sheet=Sheet1
+2026-08-23 10:38:20,349 | INFO | Resolved source 'buying_groups' (Buying Groups) -> file=Buying_groups.xlsx | sheet=Sheet1
+2026-08-23 10:38:20,349 | INFO | Resolved source 'awards' (Awards) -> file=Awards.xlsx | sheet=Sheet1
+2026-08-23 10:38:20,349 | INFO | Resolved source 'critical_inventory_tracker' (Critical Inventory Tracker (CIP)) -> file=CIP.xlsx | sheet=Sheet1
+2026-08-23 10:38:20,349 | WARNING | Optional source 'morning_completed_orderbook' (Morning Completed Order Book) not found in input folder; skipping (not required for this workflow).
+2026-08-23 10:38:20,349 | INFO | Resolved source 'sales_trend' (Sales Trend (Strend)) -> file=Strend.xlsx | sheet=Sheet1
+2026-08-23 10:38:20,349 | WARNING | Optional source 'upload_sheet' (Upload Sheet) not found in input folder; skipping (not required for this workflow).
+2026-08-23 10:38:20,382 | INFO | Loaded workbook=raw_OB.xlsx sheet=UOB rows=8 cols=34
+2026-08-23 10:38:20,382 | INFO | Loaded workbook=MOQ.xlsx sheet=Sheet1 rows=4 cols=4
+2026-08-23 10:38:20,399 | INFO | Loaded workbook=inv_21-08.xlsx sheet=Sheet1 rows=16 cols=13
+2026-08-23 10:38:20,415 | INFO | Loaded workbook=Open_Order_Summary.xlsx sheet=Sheet1 rows=7 cols=21
+2026-08-23 10:38:20,466 | INFO | Loaded workbook=Buying_groups.xlsx sheet=Sheet1 rows=677 cols=2
+2026-08-23 10:38:20,499 | INFO | Loaded workbook=Awards.xlsx sheet=Sheet1 rows=129 cols=7
+2026-08-23 10:38:20,499 | INFO | Loaded workbook=CIP.xlsx sheet=Sheet1 rows=10 cols=4
+2026-08-23 10:38:20,650 | INFO | Loaded workbook=Strend.xlsx sheet=Sheet1 rows=101 cols=66
+2026-08-23 10:38:20,669 | WARNING | EMPTY_COLUMNS | workbook=Orderbook | worksheet=UOB | Completely blank columns: ['Floor limit Blk', 'Multiple of MOQ Blk', 'Expected Price Blk', 'SOM Indc.']
+2026-08-23 10:38:20,669 | INFO | MISSING_OPTIONAL_WORKBOOK | workbook=Morning Completed Order Book | worksheet= | The 'Morning Completed Order Book' source was not loaded. Hint: Morning completed/processed order book.
+2026-08-23 10:38:20,669 | WARNING | BLANK_HEADERS | workbook=Sales Trend (Strend) | worksheet=Sheet1 | Blank raw headers found: 3
+2026-08-23 10:38:20,669 | INFO | MISSING_OPTIONAL_WORKBOOK | workbook=Upload Sheet | worksheet= | The 'Upload Sheet' source was not loaded. Hint: Upload / order-adjustment sheet (optional; e.g. upload sheet.xlsx).
+2026-08-23 10:38:20,669 | ERROR | Validation failed: No quantity source found.
+
+This application requires EITHER a Morning Completed Order Book OR an Upload Sheet in the input folder.
+
+Place one of these files in the input folder and re-run.
+2026-08-23 21:54:43,759 | INFO | Starting Orderbook automation workflow
+2026-08-23 21:54:43,759 | INFO | Application root=G:\Support\orderbook\part1\OrderbookAutomation | input_dir=G:\Support\orderbook\part1\OrderbookAutomation\input | output_dir=G:\Support\orderbook\part1\OrderbookAutomation\output | debug_mode=False
+2026-08-23 21:54:43,792 | INFO | Discovery scan | file=Awards.xlsx | sheet=Sheet1 | header_row=0 | header_count=7
+2026-08-23 21:54:43,811 | INFO | Discovery scan | file=Buying_groups.xlsx | sheet=Sheet1 | header_row=0 | header_count=2
+2026-08-23 21:54:43,825 | INFO | Discovery scan | file=CIP.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 21:54:43,844 | INFO | Discovery scan | file=inv_21-08.xlsx | sheet=Sheet1 | header_row=0 | header_count=13
+2026-08-23 21:54:43,861 | INFO | Discovery scan | file=MOQ.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 21:54:43,880 | INFO | Discovery scan | file=Open_Order_Summary.xlsx | sheet=Sheet1 | header_row=3 | header_count=21
+2026-08-23 21:54:43,906 | INFO | Discovery scan | file=raw_OB.xlsx | sheet=UOB | header_row=0 | header_count=34
+2026-08-23 21:54:43,921 | INFO | Discovery scan | file=sales_summ.xlsx | sheet=Sheet1 | header_row=0 | header_count=37
+2026-08-23 21:54:43,955 | INFO | Discovery scan | file=Strend.xlsx | sheet=Sheet1 | header_row=3 | header_count=66
+2026-08-23 21:54:43,987 | INFO | Discovery scan | file=upload sheet.xlsx | sheet=Sheet1 | header_row=0 | header_count=9
+2026-08-23 21:54:43,988 | INFO | Resolved source 'orderbook' (Orderbook) -> file=raw_OB.xlsx | sheet=UOB
+2026-08-23 21:54:43,988 | INFO | Resolved source 'moq' (Material Description / MOQ Master) -> file=MOQ.xlsx | sheet=Sheet1
+2026-08-23 21:54:43,988 | INFO | Resolved source 'inventory' (Daily Inventory) -> file=inv_21-08.xlsx | sheet=Sheet1
+2026-08-23 21:54:43,988 | INFO | Resolved source 'open_order_summary' (Open Order Summary) -> file=Open_Order_Summary.xlsx | sheet=Sheet1
+2026-08-23 21:54:43,988 | INFO | Resolved source 'buying_groups' (Buying Groups) -> file=Buying_groups.xlsx | sheet=Sheet1
+2026-08-23 21:54:43,988 | INFO | Resolved source 'awards' (Awards) -> file=Awards.xlsx | sheet=Sheet1
+2026-08-23 21:54:43,988 | INFO | Resolved source 'critical_inventory_tracker' (Critical Inventory Tracker (CIP)) -> file=CIP.xlsx | sheet=Sheet1
+2026-08-23 21:54:43,988 | WARNING | Optional source 'morning_completed_orderbook' (Morning Completed Order Book) not found in input folder; skipping (not required for this workflow).
+2026-08-23 21:54:43,989 | INFO | Resolved source 'sales_trend' (Sales Trend (Strend)) -> file=Strend.xlsx | sheet=Sheet1
+2026-08-23 21:54:43,989 | INFO | Resolved source 'upload_sheet' (Upload Sheet) -> file=upload sheet.xlsx | sheet=Sheet1
+2026-08-23 21:54:44,014 | INFO | Loaded workbook=raw_OB.xlsx sheet=UOB rows=8 cols=34
+2026-08-23 21:54:44,028 | INFO | Loaded workbook=MOQ.xlsx sheet=Sheet1 rows=4 cols=4
+2026-08-23 21:54:44,044 | INFO | Loaded workbook=inv_21-08.xlsx sheet=Sheet1 rows=16 cols=13
+2026-08-23 21:54:44,064 | INFO | Loaded workbook=Open_Order_Summary.xlsx sheet=Sheet1 rows=7 cols=21
+2026-08-23 21:54:44,107 | INFO | Loaded workbook=Buying_groups.xlsx sheet=Sheet1 rows=677 cols=2
+2026-08-23 21:54:44,136 | INFO | Loaded workbook=Awards.xlsx sheet=Sheet1 rows=129 cols=7
+2026-08-23 21:54:44,147 | INFO | Loaded workbook=CIP.xlsx sheet=Sheet1 rows=10 cols=4
+2026-08-23 21:54:44,323 | INFO | Loaded workbook=Strend.xlsx sheet=Sheet1 rows=101 cols=66
+2026-08-23 21:54:44,341 | INFO | Loaded workbook=upload sheet.xlsx sheet=Sheet1 rows=8 cols=9
+2026-08-23 21:54:44,355 | WARNING | EMPTY_COLUMNS | workbook=Orderbook | worksheet=UOB | Completely blank columns: ['Floor limit Blk', 'Multiple of MOQ Blk', 'Expected Price Blk', 'SOM Indc.']
+2026-08-23 21:54:44,355 | INFO | MISSING_OPTIONAL_WORKBOOK | workbook=Morning Completed Order Book | worksheet= | The 'Morning Completed Order Book' source was not loaded. Hint: Morning completed/processed order book.
+2026-08-23 21:54:44,355 | WARNING | BLANK_HEADERS | workbook=Sales Trend (Strend) | worksheet=Sheet1 | Blank raw headers found: 3
+2026-08-23 21:54:44,355 | WARNING | BLANK_HEADERS | workbook=Upload Sheet | worksheet=Sheet1 | Blank raw headers found: 1
+2026-08-23 21:54:44,356 | INFO | Sales Order Qty adjustment source: Upload Sheet (row filtering=yes)
+2026-08-23 21:54:44,360 | INFO | Upload Sheet adjustments | source_rows=8 | rows_used=7 | ndc_groups=5
+2026-08-23 21:54:44,361 | WARNING | Duplicate inventory NDC values detected: 12
+2026-08-23 21:54:44,363 | INFO | UPS Inventory Hold Code Filter | total_inventory_rows=16 | blank_hold_codes=7 | excluded_hold_codes=9 | unique_ndcs_before=4 | unique_ndcs_after=3 | inventory_before_filter=40488.0 | inventory_after_filter=34152.0
+2026-08-23 21:54:44,371 | WARNING | Missing inventory for allocated NDC values: 1
+2026-08-23 21:54:44,375 | INFO | Applying upload adjustments to UPS Inventory for 4 NDCs
+2026-08-23 21:54:44,376 | INFO | Derived inventory stats | inventory_rows=3 | allocated_rows=3 | unique_ndcs=4 | missing_inventory=1 | missing_allocations=1
+2026-08-23 21:54:44,378 | INFO | Phase 2 derived datasets kept in memory (production mode; no intermediate workbook written)
+2026-08-23 21:54:44,378 | INFO | Phase 2 completed successfully
+2026-08-23 21:54:44,383 | INFO | Lookup construction stats | total_rows=8 | rows_with_ndc=8 | rows_with_sold_to_party_name=8 | rows_with_valid_lookup=8 | rows_missing_lookup=0
+2026-08-23 21:54:44,402 | INFO | 07-30_inv.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=4 | unmatched_records=4 | duplicate_lookup_keys=12
+2026-08-23 21:54:44,402 | INFO | 07-30_inv.xlsx merged using NDC Code | rows updated=4 | rows missing=3 | duplicate keys=12
+2026-08-23 21:54:44,419 | INFO | Open_Order_Summary.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=3
+2026-08-23 21:54:44,419 | INFO | Open_Order_Summary.xlsx merged using Sold To Party Name | rows updated=0 | rows missing=4 | duplicate keys=3
+2026-08-23 21:54:44,441 | INFO | Strend.xlsx lookup stats | total_rows=8 | values_normalized=91 | successful_matches=8 | unmatched_records=0 | duplicate_lookup_keys=0
+2026-08-23 21:54:44,441 | INFO | Strend.xlsx merged using Lookup | rows updated=8 | rows missing=99 | duplicate keys=0
+2026-08-23 21:54:44,457 | INFO | CIP.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=0
+2026-08-23 21:54:44,457 | INFO | CIP.xlsx merged using NDC Code | rows updated=0 | rows missing=10 | duplicate keys=0
+2026-08-23 21:54:44,473 | INFO | Buying Group source loaded | source=Buying_groups.xlsx | priority=1 | raw_rows=677 | unique_customers=11 | exact_duplicates_removed=666 | same_tier_conflicts=0
+2026-08-23 21:54:44,509 | INFO | Buying Group source loaded | source=Strend.xlsx | priority=2 | raw_rows=101 | unique_customers=53 | exact_duplicates_removed=48 | same_tier_conflicts=0
+2026-08-23 21:54:44,514 | INFO | Buying Group source loaded | source=Open_Order_Summary.xlsx | priority=3 | raw_rows=7 | unique_customers=4 | exact_duplicates_removed=3 | same_tier_conflicts=0
+2026-08-23 21:54:44,549 | INFO | Buying Group multi-source lookup | total_master_rows=8 | rows_after_merge=8 | unique_master_customers=1 | unique_source_customers=56 | exact_duplicates_removed=717 | same_priority_conflicts=0 | lower_priority_disagreements=2 | matched_rows=8 | not_found_rows=0 | duplicate_conflict_rows=0 | populated_rows=8 | blank_rows=0 | matches_by_source={'Strend.xlsx': 8}
+2026-08-23 21:54:44,591 | INFO | Award lookup stats | source_rows=129 | total_master_rows=8 | rows_after_merge=8 | matched=0 (lookup=0, ndc=0) | not_found=8 | duplicate_conflict=0 | populated=0 | blank=8 | exact_duplicate_source_rows_removed=0 | conflicting_ndcs=2
+2026-08-23 21:54:44,595 | INFO | Lookup construction stats | total_rows=8 | rows_with_ndc=8 | rows_with_sold_to_party_name=8 | rows_with_valid_lookup=8 | rows_missing_lookup=0
+2026-08-23 21:54:44,597 | INFO | Business Master dataset kept in memory (production mode; no intermediate workbook written)
+2026-08-23 21:54:44,598 | INFO | Phase 3 completed successfully
+2026-08-23 21:54:44,604 | INFO | Determined reporting period from 'PO date': 2026-07
+2026-08-23 21:54:44,610 | INFO | Historical sales stats | reporting_period=2026-07 | matched=8 | missing=0 | duplicate_keys=0
+2026-08-23 21:54:44,615 | WARNING | MOQ_Issue could not be merged into the final dataset (missing source or key column)
+2026-08-23 21:54:44,628 | INFO | SC Comments lookup stats | source_rows=10 | unique_source_ndcs=10 | total_master_rows=8 | rows_after_merge=8 | matched=0 | not_found=8 | duplicate_conflict=0 | populated=0 | blank=8 | exact_duplicate_source_rows_removed=0 | conflicting_ndcs=0 | used_date_column=False
+2026-08-23 21:54:44,628 | INFO | Phase 4 enrichment stats | ups_inventory_matches=8 | moq_matches=0 | sc_comments_matches=0 | sc_comments_missing=8 | buying_group_missing=0 | award_missing=8
+2026-08-23 21:54:44,631 | INFO | Phase 2 MOQ_Issue column 'MOQ_Issue' present but ignored; computing MOQ issues from Orderbook columns
+2026-08-23 21:54:44,633 | INFO | Business rules applied | controlled_products=0 | price_issues=0 | moq_issues=0 | low_ups_inventory=4
+2026-08-23 21:54:44,638 | INFO | Historical sales merge stats | matched=8 | missing=0
+2026-08-23 21:54:44,638 | WARNING | Sales Summary aggregation: 'Action' column not found; Summary Cancel/Hold row colouring will be skipped
+2026-08-23 21:54:44,643 | INFO | Sales Summary aggregation stats | rows=2 | unique_lookups=2 | duplicate_lookups=0 | action_cancel_rows=0 | action_hold_rows=0
+2026-08-23 21:54:44,646 | INFO | Sales Summary kept in memory (production mode; no intermediate workbook written)
+2026-08-23 21:54:44,646 | INFO | Orderbook grain validation passed | master_rows=8 | orderbook_rows=8 | dropped_records=0
+2026-08-23 21:54:44,686 | INFO | POB Summary low UPS Inventory highlight | highlighted_cells=1
+2026-08-23 21:54:44,686 | INFO | POB Summary Action row colouring | cancel_rows=0 | hold_rows=0
+2026-08-23 21:54:44,705 | INFO | Wrote final POB workbook to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
+2026-08-23 21:54:44,705 | INFO | Phase 4 completed successfully. POB saved to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
+2026-08-23 21:54:44,705 | INFO | Workflow completed successfully in 0.95 seconds
+2026-08-23 21:54:57,660 | INFO | Removed stale application-generated output files: POB.xlsx
+2026-08-23 21:54:57,660 | INFO | Starting Orderbook automation workflow
+2026-08-23 21:54:57,660 | INFO | Application root=G:\Support\orderbook\part1\OrderbookAutomation | input_dir=G:\Support\orderbook\part1\OrderbookAutomation\input | output_dir=G:\Support\orderbook\part1\OrderbookAutomation\output | debug_mode=False
+2026-08-23 21:54:57,686 | INFO | Discovery scan | file=_bak_ob.xlsx | sheet=UOB | header_row=0 | header_count=34
+2026-08-23 21:54:57,703 | INFO | Discovery scan | file=Awards.xlsx | sheet=Sheet1 | header_row=0 | header_count=7
+2026-08-23 21:54:57,720 | INFO | Discovery scan | file=Buying_groups.xlsx | sheet=Sheet1 | header_row=0 | header_count=2
+2026-08-23 21:54:57,734 | INFO | Discovery scan | file=CIP.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 21:54:57,748 | INFO | Discovery scan | file=inv_21-08.xlsx | sheet=Sheet1 | header_row=0 | header_count=13
+2026-08-23 21:54:57,762 | INFO | Discovery scan | file=MOQ.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 21:54:57,780 | INFO | Discovery scan | file=Open_Order_Summary.xlsx | sheet=Sheet1 | header_row=3 | header_count=21
+2026-08-23 21:54:57,806 | INFO | Discovery scan | file=raw_OB.xlsx | sheet=UOB | header_row=0 | header_count=35
+2026-08-23 21:54:57,819 | INFO | Discovery scan | file=sales_summ.xlsx | sheet=Sheet1 | header_row=0 | header_count=37
+2026-08-23 21:54:57,856 | INFO | Discovery scan | file=Strend.xlsx | sheet=Sheet1 | header_row=3 | header_count=66
+2026-08-23 21:54:57,874 | INFO | Discovery scan | file=upload sheet.xlsx | sheet=Sheet1 | header_row=0 | header_count=9
+2026-08-23 21:54:57,875 | ERROR | Input discovery failed: Multiple files/worksheets match the 'Orderbook' source and the correct one could not be determined automatically:
+  - _bak_ob.xlsx (worksheet 'UOB')
+  - raw_OB.xlsx (worksheet 'UOB')
+Please leave only the correct/current workbook in the input folder and re-run.
+2026-08-23 21:55:25,778 | INFO | Starting Orderbook automation workflow
+2026-08-23 21:55:25,778 | INFO | Application root=G:\Support\orderbook\part1\OrderbookAutomation | input_dir=G:\Support\orderbook\part1\OrderbookAutomation\input | output_dir=G:\Support\orderbook\part1\OrderbookAutomation\output | debug_mode=False
+2026-08-23 21:55:25,796 | INFO | Discovery scan | file=Awards.xlsx | sheet=Sheet1 | header_row=0 | header_count=7
+2026-08-23 21:55:25,814 | INFO | Discovery scan | file=Buying_groups.xlsx | sheet=Sheet1 | header_row=0 | header_count=2
+2026-08-23 21:55:25,826 | INFO | Discovery scan | file=CIP.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 21:55:25,843 | INFO | Discovery scan | file=inv_21-08.xlsx | sheet=Sheet1 | header_row=0 | header_count=13
+2026-08-23 21:55:25,856 | INFO | Discovery scan | file=MOQ.xlsx | sheet=Sheet1 | header_row=0 | header_count=4
+2026-08-23 21:55:25,874 | INFO | Discovery scan | file=Open_Order_Summary.xlsx | sheet=Sheet1 | header_row=3 | header_count=21
+2026-08-23 21:55:25,897 | INFO | Discovery scan | file=raw_OB.xlsx | sheet=UOB | header_row=0 | header_count=34
+2026-08-23 21:55:25,908 | INFO | Discovery scan | file=sales_summ.xlsx | sheet=Sheet1 | header_row=0 | header_count=37
+2026-08-23 21:55:25,940 | INFO | Discovery scan | file=Strend.xlsx | sheet=Sheet1 | header_row=3 | header_count=66
+2026-08-23 21:55:25,959 | INFO | Discovery scan | file=upload sheet.xlsx | sheet=Sheet1 | header_row=0 | header_count=9
+2026-08-23 21:55:25,959 | INFO | Resolved source 'orderbook' (Orderbook) -> file=raw_OB.xlsx | sheet=UOB
+2026-08-23 21:55:25,959 | INFO | Resolved source 'moq' (Material Description / MOQ Master) -> file=MOQ.xlsx | sheet=Sheet1
+2026-08-23 21:55:25,959 | INFO | Resolved source 'inventory' (Daily Inventory) -> file=inv_21-08.xlsx | sheet=Sheet1
+2026-08-23 21:55:25,959 | INFO | Resolved source 'open_order_summary' (Open Order Summary) -> file=Open_Order_Summary.xlsx | sheet=Sheet1
+2026-08-23 21:55:25,959 | INFO | Resolved source 'buying_groups' (Buying Groups) -> file=Buying_groups.xlsx | sheet=Sheet1
+2026-08-23 21:55:25,959 | INFO | Resolved source 'awards' (Awards) -> file=Awards.xlsx | sheet=Sheet1
+2026-08-23 21:55:25,959 | INFO | Resolved source 'critical_inventory_tracker' (Critical Inventory Tracker (CIP)) -> file=CIP.xlsx | sheet=Sheet1
+2026-08-23 21:55:25,959 | WARNING | Optional source 'morning_completed_orderbook' (Morning Completed Order Book) not found in input folder; skipping (not required for this workflow).
+2026-08-23 21:55:25,959 | INFO | Resolved source 'sales_trend' (Sales Trend (Strend)) -> file=Strend.xlsx | sheet=Sheet1
+2026-08-23 21:55:25,961 | INFO | Resolved source 'upload_sheet' (Upload Sheet) -> file=upload sheet.xlsx | sheet=Sheet1
+2026-08-23 21:55:25,984 | INFO | Loaded workbook=raw_OB.xlsx sheet=UOB rows=8 cols=34
+2026-08-23 21:55:25,995 | INFO | Loaded workbook=MOQ.xlsx sheet=Sheet1 rows=4 cols=4
+2026-08-23 21:55:26,011 | INFO | Loaded workbook=inv_21-08.xlsx sheet=Sheet1 rows=16 cols=13
+2026-08-23 21:55:26,028 | INFO | Loaded workbook=Open_Order_Summary.xlsx sheet=Sheet1 rows=7 cols=21
+2026-08-23 21:55:26,069 | INFO | Loaded workbook=Buying_groups.xlsx sheet=Sheet1 rows=677 cols=2
+2026-08-23 21:55:26,094 | INFO | Loaded workbook=Awards.xlsx sheet=Sheet1 rows=129 cols=7
+2026-08-23 21:55:26,106 | INFO | Loaded workbook=CIP.xlsx sheet=Sheet1 rows=10 cols=4
+2026-08-23 21:55:26,267 | INFO | Loaded workbook=Strend.xlsx sheet=Sheet1 rows=101 cols=66
+2026-08-23 21:55:26,284 | INFO | Loaded workbook=upload sheet.xlsx sheet=Sheet1 rows=8 cols=9
+2026-08-23 21:55:26,296 | WARNING | EMPTY_COLUMNS | workbook=Orderbook | worksheet=UOB | Completely blank columns: ['Floor limit Blk', 'Multiple of MOQ Blk', 'Expected Price Blk', 'SOM Indc.']
+2026-08-23 21:55:26,297 | INFO | MISSING_OPTIONAL_WORKBOOK | workbook=Morning Completed Order Book | worksheet= | The 'Morning Completed Order Book' source was not loaded. Hint: Morning completed/processed order book.
+2026-08-23 21:55:26,297 | WARNING | BLANK_HEADERS | workbook=Sales Trend (Strend) | worksheet=Sheet1 | Blank raw headers found: 3
+2026-08-23 21:55:26,297 | WARNING | BLANK_HEADERS | workbook=Upload Sheet | worksheet=Sheet1 | Blank raw headers found: 1
+2026-08-23 21:55:26,297 | INFO | Sales Order Qty adjustment source: Upload Sheet (row filtering=yes)
+2026-08-23 21:55:26,303 | INFO | Upload Sheet adjustments | source_rows=8 | rows_used=7 | ndc_groups=5
+2026-08-23 21:55:26,304 | WARNING | Duplicate inventory NDC values detected: 12
+2026-08-23 21:55:26,305 | INFO | UPS Inventory Hold Code Filter | total_inventory_rows=16 | blank_hold_codes=7 | excluded_hold_codes=9 | unique_ndcs_before=4 | unique_ndcs_after=3 | inventory_before_filter=40488.0 | inventory_after_filter=34152.0
+2026-08-23 21:55:26,312 | WARNING | Missing inventory for allocated NDC values: 1
+2026-08-23 21:55:26,316 | INFO | Applying upload adjustments to UPS Inventory for 4 NDCs
+2026-08-23 21:55:26,319 | INFO | Derived inventory stats | inventory_rows=3 | allocated_rows=3 | unique_ndcs=4 | missing_inventory=1 | missing_allocations=1
+2026-08-23 21:55:26,320 | INFO | Phase 2 derived datasets kept in memory (production mode; no intermediate workbook written)
+2026-08-23 21:55:26,320 | INFO | Phase 2 completed successfully
+2026-08-23 21:55:26,326 | INFO | Lookup construction stats | total_rows=8 | rows_with_ndc=8 | rows_with_sold_to_party_name=8 | rows_with_valid_lookup=8 | rows_missing_lookup=0
+2026-08-23 21:55:26,342 | INFO | 07-30_inv.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=4 | unmatched_records=4 | duplicate_lookup_keys=12
+2026-08-23 21:55:26,342 | INFO | 07-30_inv.xlsx merged using NDC Code | rows updated=4 | rows missing=3 | duplicate keys=12
+2026-08-23 21:55:26,357 | INFO | Open_Order_Summary.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=3
+2026-08-23 21:55:26,358 | INFO | Open_Order_Summary.xlsx merged using Sold To Party Name | rows updated=0 | rows missing=4 | duplicate keys=3
+2026-08-23 21:55:26,376 | INFO | Strend.xlsx lookup stats | total_rows=8 | values_normalized=91 | successful_matches=8 | unmatched_records=0 | duplicate_lookup_keys=0
+2026-08-23 21:55:26,376 | INFO | Strend.xlsx merged using Lookup | rows updated=8 | rows missing=99 | duplicate keys=0
+2026-08-23 21:55:26,389 | INFO | CIP.xlsx lookup stats | total_rows=8 | values_normalized=0 | successful_matches=0 | unmatched_records=8 | duplicate_lookup_keys=0
+2026-08-23 21:55:26,390 | INFO | CIP.xlsx merged using NDC Code | rows updated=0 | rows missing=10 | duplicate keys=0
+2026-08-23 21:55:26,405 | INFO | Buying Group source loaded | source=Buying_groups.xlsx | priority=1 | raw_rows=677 | unique_customers=11 | exact_duplicates_removed=666 | same_tier_conflicts=0
+2026-08-23 21:55:26,439 | INFO | Buying Group source loaded | source=Strend.xlsx | priority=2 | raw_rows=101 | unique_customers=53 | exact_duplicates_removed=48 | same_tier_conflicts=0
+2026-08-23 21:55:26,445 | INFO | Buying Group source loaded | source=Open_Order_Summary.xlsx | priority=3 | raw_rows=7 | unique_customers=4 | exact_duplicates_removed=3 | same_tier_conflicts=0
+2026-08-23 21:55:26,480 | INFO | Buying Group multi-source lookup | total_master_rows=8 | rows_after_merge=8 | unique_master_customers=1 | unique_source_customers=56 | exact_duplicates_removed=717 | same_priority_conflicts=0 | lower_priority_disagreements=2 | matched_rows=8 | not_found_rows=0 | duplicate_conflict_rows=0 | populated_rows=8 | blank_rows=0 | matches_by_source={'Strend.xlsx': 8}
+2026-08-23 21:55:26,525 | INFO | Award lookup stats | source_rows=129 | total_master_rows=8 | rows_after_merge=8 | matched=0 (lookup=0, ndc=0) | not_found=8 | duplicate_conflict=0 | populated=0 | blank=8 | exact_duplicate_source_rows_removed=0 | conflicting_ndcs=2
+2026-08-23 21:55:26,526 | INFO | Lookup construction stats | total_rows=8 | rows_with_ndc=8 | rows_with_sold_to_party_name=8 | rows_with_valid_lookup=8 | rows_missing_lookup=0
+2026-08-23 21:55:26,529 | INFO | Business Master dataset kept in memory (production mode; no intermediate workbook written)
+2026-08-23 21:55:26,529 | INFO | Phase 3 completed successfully
+2026-08-23 21:55:26,531 | INFO | Determined reporting period from 'PO date': 2026-07
+2026-08-23 21:55:26,536 | INFO | Historical sales stats | reporting_period=2026-07 | matched=8 | missing=0 | duplicate_keys=0
+2026-08-23 21:55:26,541 | WARNING | MOQ_Issue could not be merged into the final dataset (missing source or key column)
+2026-08-23 21:55:26,552 | INFO | SC Comments lookup stats | source_rows=10 | unique_source_ndcs=10 | total_master_rows=8 | rows_after_merge=8 | matched=0 | not_found=8 | duplicate_conflict=0 | populated=0 | blank=8 | exact_duplicate_source_rows_removed=0 | conflicting_ndcs=0 | used_date_column=False
+2026-08-23 21:55:26,553 | INFO | Phase 4 enrichment stats | ups_inventory_matches=8 | moq_matches=0 | sc_comments_matches=0 | sc_comments_missing=8 | buying_group_missing=0 | award_missing=8
+2026-08-23 21:55:26,555 | INFO | Phase 2 MOQ_Issue column 'MOQ_Issue' present but ignored; computing MOQ issues from Orderbook columns
+2026-08-23 21:55:26,557 | INFO | Business rules applied | controlled_products=0 | price_issues=0 | moq_issues=0 | low_ups_inventory=4
+2026-08-23 21:55:26,561 | INFO | Historical sales merge stats | matched=8 | missing=0
+2026-08-23 21:55:26,562 | WARNING | Sales Summary aggregation: 'Action' column not found; Summary Cancel/Hold row colouring will be skipped
+2026-08-23 21:55:26,566 | INFO | Sales Summary aggregation stats | rows=2 | unique_lookups=2 | duplicate_lookups=0 | action_cancel_rows=0 | action_hold_rows=0
+2026-08-23 21:55:26,570 | INFO | Sales Summary kept in memory (production mode; no intermediate workbook written)
+2026-08-23 21:55:26,570 | INFO | Orderbook grain validation passed | master_rows=8 | orderbook_rows=8 | dropped_records=0
+2026-08-23 21:55:26,604 | INFO | POB Summary low UPS Inventory highlight | highlighted_cells=1
+2026-08-23 21:55:26,604 | INFO | POB Summary Action row colouring | cancel_rows=0 | hold_rows=0
+2026-08-23 21:55:26,620 | INFO | Wrote final POB workbook to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
+2026-08-23 21:55:26,621 | INFO | Phase 4 completed successfully. POB saved to G:\Support\orderbook\part1\OrderbookAutomation\output\POB.xlsx
+2026-08-23 21:55:26,621 | INFO | Workflow completed successfully in 0.84 seconds

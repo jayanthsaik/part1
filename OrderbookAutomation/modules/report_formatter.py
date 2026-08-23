@@ -160,6 +160,71 @@ def apply_low_ups_inventory_formatting(
     return highlighted
 
 
+def apply_summary_action_formatting(
+    worksheet: Worksheet,
+    summary_df: pd.DataFrame,
+    *,
+    action_flag_column: str = "Summary_Action_Flag",
+) -> tuple[int, int]:
+    """Apply the Cancel (red) / Hold (blue) WHOLE-ROW fills to the aggregated
+    Summary worksheet, returning ``(cancel_rows, hold_rows)``.
+
+    This is the Summary-sheet counterpart to the Orderbook sheet's
+    ``apply_business_rule_formatting`` Action rules, and uses the IDENTICAL
+    fills so the two sheets stay visually consistent.
+
+    KEY DIFFERENCE FROM THE ORDERBOOK SHEET: the Summary sheet is aggregated
+    (one row per Material/Customer/Lookup/NDC), so it carries no per-order
+    "Action" column and the value CANNOT be read from the worksheet. It is
+    instead read from the internal ``Summary_Action_Flag`` column that
+    ``build_sales_summary_aggregation`` computed inside the same groupby,
+    using the documented rollup rule (any Cancel -> Cancel, else any Hold ->
+    Hold). This function never derives the rule itself; it only reads that
+    pre-computed flag.
+
+    ``summary_df`` is the INTERNAL summary dataframe (which still contains
+    the flag column), even though the written client-facing ``worksheet``
+    excludes it per the reference schema. Values are read positionally --
+    valid because the reference projection preserves row order 1:1 and
+    performs no further aggregation or row reduction.
+
+    Applied AFTER the low UPS Inventory yellow highlight, so a Cancel/Hold
+    row takes full precedence over that cell highlight -- matching the
+    Orderbook sheet, where the Action fills are likewise applied last.
+    """
+    if action_flag_column not in summary_df.columns:
+        return 0, 0
+
+    flag_values = summary_df[action_flag_column].reset_index(drop=True)
+
+    cancel_rows = 0
+    hold_rows = 0
+
+    for row_number in range(2, worksheet.max_row + 1):
+        df_index = row_number - 2  # worksheet row 2 == df row 0 (header occupies row 1)
+        if df_index >= len(flag_values):
+            break
+
+        value = flag_values.iloc[df_index]
+        if value is None or pd.isna(value):
+            continue
+
+        flag = str(value).strip().casefold()
+        if flag == "cancel":
+            fill = FILL_CANCEL_RED
+            cancel_rows += 1
+        elif flag == "hold":
+            fill = FILL_HOLD_BLUE
+            hold_rows += 1
+        else:
+            continue
+
+        for column_index in range(1, worksheet.max_column + 1):
+            worksheet.cell(row=row_number, column=column_index).fill = fill
+
+    return cancel_rows, hold_rows
+
+
 def apply_business_rule_formatting(
     worksheet: Worksheet,
     df: pd.DataFrame,
