@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Callable, Mapping, Sequence
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -23,6 +23,7 @@ from config import (
 )
 from modules.award_lookup import AWARD_EXCEPTION_COLUMNS, build_award_lookup
 from modules.buying_group_lookup import AUDIT_COLUMNS, EXCEPTION_COLUMNS, build_buying_group_lookup
+from modules.historical_sales import resolve_sales_trend_payload_columns
 from modules.utils import normalize_identifier_key, normalize_ndc_key, normalize_text_key
 
 
@@ -41,6 +42,22 @@ class SourceSpec:
     dataframe_key: str
     preferred_columns: tuple[str, ...]
     strategies: tuple[JoinStrategy, ...]
+    # Optional hook for sources whose payload column HEADERS change every
+    # period (currently only Strend.xlsx, whose current-month / forecast /
+    # rolling-average headers are rewritten with each monthly export).
+    # When set, it is called with the source's actual column list and must
+    # return additional ORIGINAL header names to append to
+    # ``preferred_columns``. Returning () is always safe.
+    dynamic_columns_resolver: Callable[[Sequence[str]], tuple[str, ...]] | None = None
+
+    def resolve_preferred_columns(self, source_columns: Sequence[str]) -> tuple[str, ...]:
+        """Return static preferred columns plus any dynamically resolved ones."""
+        resolved = list(self.preferred_columns)
+        if self.dynamic_columns_resolver is not None:
+            for column in self.dynamic_columns_resolver(source_columns):
+                if column not in resolved:
+                    resolved.append(column)
+        return tuple(resolved)
 
 
 @dataclass(frozen=True)
@@ -128,10 +145,14 @@ SOURCE_SPECS: tuple[SourceSpec, ...] = (
             SALES_TREND_COLUMNS["customer_group"],
             SALES_TREND_COLUMNS["contract_id"],
             SALES_TREND_COLUMNS["lookup"],
-            " Jul-26 ",
-            " July'26- Forecast ",
-            " Avg Jan'26 to June'26 ",
         ),
+        # The current-month (" Jul-26 "), forecast (" July'26- Forecast ")
+        # and rolling-average (" Avg Jan'26 to June'26 ") headers are
+        # REWRITTEN by the business every month. They were previously
+        # hardcoded here, which meant the following month's export silently
+        # merged nothing. They are now resolved by pattern from the actual
+        # file, so each new monthly Strend is picked up automatically.
+        dynamic_columns_resolver=resolve_sales_trend_payload_columns,
         strategies=(
             JoinStrategy(("Lookup",), (SALES_TREND_COLUMNS["lookup"],), ("lookup",), "Lookup"),
             JoinStrategy((LOOKUP_COLUMNS["ndc_code"],), (SALES_TREND_COLUMNS["ndc_code"],), ("ndc",), "NDC Code"),
@@ -353,7 +374,7 @@ def _merge_source(
             comments="No compatible join strategy found",
         )
 
-    payload_columns = [column for column in spec.preferred_columns if column in source_df.columns and column not in strategy.right_keys]
+    payload_columns = [column for column in spec.resolve_preferred_columns(list(source_df.columns)) if column in source_df.columns and column not in strategy.right_keys]
     selected_columns = list(strategy.right_keys) + payload_columns
     source_selected = source_df[selected_columns].copy()
 

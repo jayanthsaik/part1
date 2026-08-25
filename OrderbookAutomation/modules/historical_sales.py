@@ -157,6 +157,121 @@ def month_label(month_number: int) -> str:
     return calendar.month_abbr[month_number]
 
 
+# ---------------------------------------------------------------------------
+# DYNAMIC STREND COLUMN RESOLUTION
+# ---------------------------------------------------------------------------
+# Strend.xlsx gains a new set of columns every month (" Jul-26 " becomes
+# " Aug-26 ", " July'26- Forecast " becomes " Aug'26- Forecast ", and the
+# rolling average window shifts). The helpers below locate those columns by
+# PATTERN instead of by hardcoded header text, so a new monthly Strend export
+# is picked up automatically with no code change.
+#
+# All matching is case-insensitive and tolerant of the arbitrary leading and
+# trailing whitespace present in the real workbook headers. The ORIGINAL
+# header text is always returned unchanged, so downstream selection/merging
+# still uses the exact business header from the file.
+
+# " July'26- Forecast ", " Jul-26 Forecast ", " Aug'26 forecast "
+_FORECAST_PATTERN = re.compile(
+    r"^(?P<month>[A-Za-z]+)\.?\s*['\-\s]?\s*(?P<year>\d{2,4})\s*[\-\s]*forecast$",
+    re.IGNORECASE,
+)
+
+# " Avg Jan'26 to June'26 ", " Average Jan-26 to Jun-26 "
+_ROLLING_AVERAGE_PATTERN = re.compile(
+    r"^(?:avg|average)\b.*\bto\b.*$",
+    re.IGNORECASE,
+)
+
+
+def find_month_header(columns: Sequence[str], year: int, month: int) -> Optional[str]:
+    """Return the original header for a specific (year, month), if present."""
+    return discover_month_columns(columns).get((year, month))
+
+
+def find_latest_month_header(columns: Sequence[str]) -> Optional[str]:
+    """Return the original header of the most recent month column present.
+
+    Used when no explicit reporting period is available: the newest month in
+    the Strend export is, by construction, the current reporting month.
+    """
+    month_map = discover_month_columns(columns)
+    if not month_map:
+        return None
+    return month_map[max(month_map)]
+
+
+def find_forecast_header(
+    columns: Sequence[str],
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+) -> Optional[str]:
+    """Return the original header of the Forecast column.
+
+    When ``year``/``month`` are supplied, only a forecast column for that exact
+    period matches. Otherwise the forecast column for the LATEST period found
+    is returned, so the newest monthly export is used automatically.
+    """
+    candidates: Dict[Tuple[int, int], str] = {}
+    for column in columns:
+        text = str(column).strip()
+        match = _FORECAST_PATTERN.match(text)
+        if not match:
+            continue
+        month_number = _MONTH_NAME_TO_NUMBER.get(match.group("month").strip().lower())
+        year_number = _normalize_year(match.group("year").strip())
+        if month_number is None or year_number is None:
+            continue
+        candidates.setdefault((year_number, month_number), str(column))
+
+    if not candidates:
+        return None
+    if year is not None and month is not None:
+        return candidates.get((year, month))
+    return candidates[max(candidates)]
+
+
+def find_rolling_average_header(columns: Sequence[str]) -> Optional[str]:
+    """Return the original header of the rolling-average column, if present.
+
+    Matches headers such as " Avg Jan'26 to June'26 " without depending on the
+    specific months in the window, which shift with every monthly export.
+    """
+    for column in columns:
+        if _ROLLING_AVERAGE_PATTERN.match(str(column).strip()):
+            return str(column)
+    return None
+
+
+def resolve_sales_trend_payload_columns(
+    columns: Sequence[str],
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+) -> Tuple[str, ...]:
+    """Resolve the period-specific Strend payload columns for the merge.
+
+    Returns the ORIGINAL header text (in file order of significance) for the
+    current month, its forecast, and the rolling-average column. Any column
+    that is absent from this month's export is simply omitted, so the merge
+    degrades gracefully instead of silently matching nothing.
+    """
+    resolved: List[str] = []
+
+    month_header = (
+        find_month_header(columns, year, month)
+        if year is not None and month is not None
+        else find_latest_month_header(columns)
+    )
+    forecast_header = find_forecast_header(columns, year, month)
+    average_header = find_rolling_average_header(columns)
+
+    for header in (month_header, forecast_header, average_header):
+        if header is not None and header not in resolved:
+            resolved.append(header)
+
+    return tuple(resolved)
+
+
 def build_historical_sales(
     strend_df: pd.DataFrame,
     master_lookup_keys: pd.Series,

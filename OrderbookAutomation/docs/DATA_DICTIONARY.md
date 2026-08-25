@@ -2,26 +2,6 @@
 
 Generated from Phase 1 workbook ingestion.
 
-## 07-30_inv.xlsx
-
-### Sheet1
-
-| Workbook | Worksheet | Exact Column Name | Detected Data Type | Sample Value | Null Count | Unique Count | Potential Join Key | Potential Business Meaning |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 07-30_inv.xlsx | Sheet1 | NDC | int64 | 64380016101 | 0 | 4 | NDC | Potential National Drug Code field |
-| 07-30_inv.xlsx | Sheet1 | SKU | str | 64380-161-01 | 0 | 4 | SKU | UNKNOWN |
-| 07-30_inv.xlsx | Sheet1 | Description | str | Valganciclovir Tablets 450mg 60ct | 0 | 4 | UNKNOWN | UNKNOWN |
-| 07-30_inv.xlsx | Sheet1 | Lot | str | 7262830A | 0 | 16 | UNKNOWN | UNKNOWN |
-| 07-30_inv.xlsx | Sheet1 | Expiration Date | int64 | 46507 | 0 | 9 | UNKNOWN | Potential date field |
-| 07-30_inv.xlsx | Sheet1 | Hold Codes | str | SD,HD | 7 | 5 | UNKNOWN | UNKNOWN |
-| 07-30_inv.xlsx | Sheet1 | Product Status | str |  | 0 | 1 | UNKNOWN | UNKNOWN |
-| 07-30_inv.xlsx | Sheet1 | Actual Quantity | int64 | 24 | 0 | 12 | UNKNOWN | Potential quantity field |
-| 07-30_inv.xlsx | Sheet1 | Allocated Quantity | int64 | 0 | 0 | 1 | UNKNOWN | Potential quantity field |
-| 07-30_inv.xlsx | Sheet1 | Inventory | int64 | 24 | 0 | 12 | UNKNOWN | UNKNOWN |
-| 07-30_inv.xlsx | Sheet1 | On Hand Damaged | int64 | 0 | 0 | 1 | UNKNOWN | UNKNOWN |
-| 07-30_inv.xlsx | Sheet1 | On Hand Hold | int64 | 24 | 0 | 7 | UNKNOWN | UNKNOWN |
-| 07-30_inv.xlsx | Sheet1 | On Hand Misc | int64 | 0 | 0 | 1 | UNKNOWN | UNKNOWN |
-
 ## Awards.xlsx
 
 ### Sheet1
@@ -55,6 +35,26 @@ Generated from Phase 1 workbook ingestion.
 | CIP.xlsx | Sheet1 | Description | str | Megestrol Acetate OS 40mg/mL, 240 | 0 | 10 | UNKNOWN | UNKNOWN |
 | CIP.xlsx | Sheet1 | Comments | str | 36K wk of 08/17 | 0 | 10 | UNKNOWN | UNKNOWN |
 | CIP.xlsx | Sheet1 | Customer ETA | str | wk 8/17 | 0 | 6 | UNKNOWN | Potential customer/account field |
+
+## inv_21-08.xlsx
+
+### Sheet1
+
+| Workbook | Worksheet | Exact Column Name | Detected Data Type | Sample Value | Null Count | Unique Count | Potential Join Key | Potential Business Meaning |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| inv_21-08.xlsx | Sheet1 | NDC | int64 | 64380016101 | 0 | 4 | NDC | Potential National Drug Code field |
+| inv_21-08.xlsx | Sheet1 | SKU | str | 64380-161-01 | 0 | 4 | SKU | UNKNOWN |
+| inv_21-08.xlsx | Sheet1 | Description | str | Valganciclovir Tablets 450mg 60ct | 0 | 4 | UNKNOWN | UNKNOWN |
+| inv_21-08.xlsx | Sheet1 | Lot | str | 7262830A | 0 | 16 | UNKNOWN | UNKNOWN |
+| inv_21-08.xlsx | Sheet1 | Expiration Date | int64 | 46507 | 0 | 9 | UNKNOWN | Potential date field |
+| inv_21-08.xlsx | Sheet1 | Hold Codes | str | SD,HD | 7 | 5 | UNKNOWN | UNKNOWN |
+| inv_21-08.xlsx | Sheet1 | Product Status | str |  | 0 | 1 | UNKNOWN | UNKNOWN |
+| inv_21-08.xlsx | Sheet1 | Actual Quantity | int64 | 24 | 0 | 12 | UNKNOWN | Potential quantity field |
+| inv_21-08.xlsx | Sheet1 | Allocated Quantity | int64 | 0 | 0 | 1 | UNKNOWN | Potential quantity field |
+| inv_21-08.xlsx | Sheet1 | Inventory | int64 | 24 | 0 | 12 | UNKNOWN | UNKNOWN |
+| inv_21-08.xlsx | Sheet1 | On Hand Damaged | int64 | 0 | 0 | 1 | UNKNOWN | UNKNOWN |
+| inv_21-08.xlsx | Sheet1 | On Hand Hold | int64 | 24 | 0 | 7 | UNKNOWN | UNKNOWN |
+| inv_21-08.xlsx | Sheet1 | On Hand Misc | int64 | 0 | 0 | 1 | UNKNOWN | UNKNOWN |
 
 ## MOQ.xlsx
 
@@ -107,7 +107,7 @@ Generated from Phase 1 workbook ingestion.
 | raw_OB.xlsx | UOB | NDC Code | int64 | 64380018701 | 0 | 2 | NDC | Potential National Drug Code field |
 | raw_OB.xlsx | UOB | Material Description | str | ZAFIRLUKAST TABS 10MG 60 | 0 | 2 | UNKNOWN | Potential material identifier or description |
 | raw_OB.xlsx | UOB | Total Stock In-hand | int64 | 19512 | 0 | 2 | UNKNOWN | UNKNOWN |
-| raw_OB.xlsx | UOB | PackSize(MOQ) | int64 | 24 | 0 | 1 | UNKNOWN | UNKNOWN |
+| raw_OB.xlsx | UOB | PackSize(MOQ) | int64 | 27 | 0 | 2 | UNKNOWN | UNKNOWN |
 | raw_OB.xlsx | UOB | Sales Order Qty | int64 | 24 | 0 | 3 | Sales Order | Potential quantity field |
 | raw_OB.xlsx | UOB | Sales Qty MTD | int64 | 168 | 0 | 2 | UNKNOWN | Potential quantity field |
 | raw_OB.xlsx | UOB | Forecast Qty | int64 | 122 | 0 | 2 | UNKNOWN | Potential quantity field |
@@ -208,3 +208,19 @@ Generated from Phase 1 workbook ingestion.
 | Strend.xlsx | Sheet1 |  Avg Jan'26 to June'26  | str |  220  | 1 | 41 | UNKNOWN | UNKNOWN |
 | Strend.xlsx | Sheet1 |  %  | str | 65% | 0 | 23 | UNKNOWN | UNKNOWN |
 | Strend.xlsx | Sheet1 |  MTD-Target  | str |  220  | 1 | 41 | UNKNOWN | UNKNOWN |
+
+## upload sheet.xlsx
+
+### Sheet1
+
+| Workbook | Worksheet | Exact Column Name | Detected Data Type | Sample Value | Null Count | Unique Count | Potential Join Key | Potential Business Meaning |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| upload sheet.xlsx | Sheet1 | Sales Order No. | int64 | 3612003488 | 0 | 6 | Sales Order | UNKNOWN |
+| upload sheet.xlsx | Sheet1 | Item No. | int64 | 10 | 0 | 5 | UNKNOWN | UNKNOWN |
+| upload sheet.xlsx | Sheet1 | NDC Code | int64 | 42543049701 | 0 | 6 | NDC | Potential National Drug Code field |
+| upload sheet.xlsx | Sheet1 | Material Description | str | Amantadine HCl Tablets 100mg, 100 | 0 | 6 | UNKNOWN | Potential material identifier or description |
+| upload sheet.xlsx | Sheet1 | Sales Order Qty | int64 | 96 | 0 | 7 | Sales Order | Potential quantity field |
+| upload sheet.xlsx | Sheet1 | Sold-to party Name | str | EXPRESS SCRIPTS | 0 | 4 | Customer | Potential customer/account field |
+| upload sheet.xlsx | Sheet1 | Action | str | Y | 0 | 2 | UNKNOWN | UNKNOWN |
+| upload sheet.xlsx | Sheet1 | PO Number | str | 1036729-2345 | 0 | 6 | UNKNOWN | UNKNOWN |
+| upload sheet.xlsx | Sheet1 | Reason Code | int64 | 1 | 0 | 3 | UNKNOWN | UNKNOWN |
