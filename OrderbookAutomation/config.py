@@ -235,8 +235,15 @@ class Phase2Config:
     """Configuration for Phase 2 derived dataset generation."""
 
     derived_workbook_name: str
+    # BUSINESS RULE (Open Order Summary -> UPS Inventory netting):
+    # Only Pickticket Statuses listed in ``open_order_included_statuses`` are
+    # allowed to consume inventory. This is an explicit ALLOW-LIST; anything
+    # not listed (e.g. "Pick Completed", "Loaded", or any future/unknown
+    # status) is ignored. ``open_order_excluded_statuses`` is retained for
+    # backwards compatibility and is applied only when the allow-list is empty.
     open_order_excluded_statuses: Sequence[str]
     sku_delimiter: str
+
     sku_segment_widths: Sequence[int]
     # Target widths of each NDC segment produced from a SKU. A warehouse SKU
     # such as "64380-161-01" carries a 3-digit product segment, while the
@@ -245,6 +252,10 @@ class Phase2Config:
     # segments are concatenated into the NDC join key. Widths must be >= the
     # corresponding ``sku_segment_widths`` entry.
     ndc_segment_widths: Sequence[int] = (5, 4, 2)
+    # Empty by default so callers that build a Phase2Config explicitly keep the
+    # legacy exclusion-list behaviour. The application default (see
+    # ``get_default_config``) populates the real allow-list.
+    open_order_included_statuses: Sequence[str] = ()
 
 
 @dataclass(frozen=True)
@@ -322,5 +333,11 @@ def get_default_config() -> AppConfig:
             sku_delimiter="-",
             sku_segment_widths=(5, 3, 2),
             ndc_segment_widths=(5, 4, 2),
+            open_order_included_statuses=(
+                "In Distribution",
+                "In Picking",
+                "Ready for Pickroot Creation",
+                "Ready for Wave Creation",
+            ),
         ),
     )

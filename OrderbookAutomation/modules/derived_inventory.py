@@ -103,9 +103,51 @@ def build_ups_inventory(
         inventory_qty_after_filter,
     )
 
-    excluded_statuses = {str(status).strip().upper() for status in phase2_config.open_order_excluded_statuses}
-    normalized_status = open_orders_working[open_order_status_col].apply(lambda value: (clean_string_value(value) or "").upper())
-    filtered_open_orders = open_orders_working.loc[~normalized_status.isin(excluded_statuses)].copy()
+    # ---- Pickticket Status eligibility filter (BUSINESS RULE) -------------
+    # Only open order rows whose Pickticket Status is one of the configured
+    # INCLUDED statuses consume inventory:
+    #   In Distribution, In Picking,
+    #   Ready for Pickroot Creation, Ready for Wave Creation
+    # Anything else (e.g. Pick Completed, Loaded, or any new/unknown status)
+    # is ignored. Comparison is case-insensitive and whitespace-tolerant.
+    # If no allow-list is configured, fall back to the legacy exclusion list.
+    included_statuses = {
+        normalized
+        for normalized in (
+            " ".join(str(status).split()).upper()
+            for status in getattr(phase2_config, "open_order_included_statuses", ()) or ()
+        )
+        if normalized
+    }
+    normalized_status = open_orders_working[open_order_status_col].apply(
+        lambda value: " ".join((clean_string_value(value) or "").split()).upper()
+    )
+
+    if included_statuses:
+        status_mask = normalized_status.isin(included_statuses)
+        logger.info(
+            "Open order Pickticket Status filter (allow-list) | included=%s | rows_in=%s | rows_kept=%s | rows_dropped=%s",
+            sorted(included_statuses),
+            len(open_orders_working),
+            int(status_mask.sum()),
+            int((~status_mask).sum()),
+        )
+        unmatched = sorted(set(normalized_status[~status_mask].unique()) - included_statuses)
+        if unmatched:
+            logger.info("Open order statuses excluded from UPS netting: %s", unmatched)
+    else:
+        excluded_statuses = {
+            " ".join(str(status).split()).upper()
+            for status in phase2_config.open_order_excluded_statuses
+        }
+        status_mask = ~normalized_status.isin(excluded_statuses)
+        logger.info(
+            "Open order Pickticket Status filter (legacy exclusion list) | excluded=%s | rows_kept=%s",
+            sorted(excluded_statuses),
+            int(status_mask.sum()),
+        )
+
+    filtered_open_orders = open_orders_working.loc[status_mask].copy()
 
     missing_sku_mask = filtered_open_orders[open_order_sku_col].isna() | (
         filtered_open_orders[open_order_sku_col].astype("string").str.strip() == ""
