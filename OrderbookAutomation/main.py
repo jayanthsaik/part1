@@ -2,9 +2,9 @@
 
 PRODUCTION BEHAVIOUR
 --------------------
-A normal (DEBUG_MODE=False) run produces exactly ONE business artifact:
+A normal (DEBUG_MODE=False) run produces one timestamped business artifact:
 
-    <application root>/output/POB.xlsx
+    <application root>/output/POB_YYYYMMDD_HHMMSS.xlsx
 
 Every intermediate dataset (Phase 2 derived data, the Phase 3 Business
 Master, historical sales, enrichment and validation frames) is carried
@@ -18,13 +18,13 @@ merge, lookup, threshold and formatting rule is identical in both modes.
 
 from __future__ import annotations
 
+import ctypes
 import logging
 import sys
 
 from config import (
     APPLICATION_GENERATED_DOC_FILES,
     APPLICATION_GENERATED_OUTPUT_FILES,
-    PRODUCTION_OUTPUT_FILENAME,
     AppConfig,
     get_default_config,
 )
@@ -38,6 +38,15 @@ from modules.source_discovery import SourceDiscoveryError
 from modules.utils import Timer, clean_generated_outputs, ensure_directory, setup_logging
 from modules.validator import DataValidationError, validate_loaded_workbooks
 from modules.workbook_manager import build_join_key_analysis_markdown, discover_join_key_candidates
+
+
+def show_user_message(title: str, message: str, *, is_error: bool = False) -> None:
+    """Show a Windows dialog when the packaged application is double-clicked."""
+    if not getattr(sys, "frozen", False) or sys.platform != "win32":
+        return
+
+    icon = 0x10 if is_error else 0x40
+    ctypes.windll.user32.MessageBoxW(None, message, title, icon)
 
 
 def _first_sheet_dataframe(loaded_workbooks, workbook_key: str):
@@ -66,8 +75,8 @@ def prepare_environment() -> "AppConfig":
     return config
 
 
-def run_pipeline(config: "AppConfig", logger) -> "AppConfig":
-    """Run Phases 1-4 and write the single production workbook (POB.xlsx)."""
+def run_pipeline(config: "AppConfig", logger):
+    """Run Phases 1-4 and return the timestamped production workbook result."""
     with Timer() as timer:
         logger.info("Starting Orderbook automation workflow")
         logger.info(
@@ -128,7 +137,7 @@ def run_pipeline(config: "AppConfig", logger) -> "AppConfig":
         logger.info("Phase 4 completed successfully. POB saved to %s", phase4_result.pob_path)
         logger.info("Workflow completed successfully in %.2f seconds", timer.elapsed_seconds)
 
-    return config
+    return phase4_result
 
 
 def run_phase3(loaded_workbooks, config, logger):
@@ -179,24 +188,27 @@ def main() -> int:
         config = prepare_environment()
         logger = setup_logging(config.logs_dir, log_name="orderbook_automation.log")
 
-        # Remove stale application-generated outputs from a previous run so a
-        # failed run can never leave the previous POB.xlsx looking current.
-        # ONLY this application's own known filenames are eligible for removal.
+        # Remove only fixed-name diagnostic artifacts from a previous run.
+        # Timestamped POB reports are retained for the user.
         clean_generated_outputs(config.output_dir, APPLICATION_GENERATED_OUTPUT_FILES, logger)
         if config.debug_mode:
             clean_generated_outputs(config.docs_dir, APPLICATION_GENERATED_DOC_FILES, logger)
 
-        run_pipeline(config, logger)
+        phase4_result = run_pipeline(config, logger)
 
     except SourceDiscoveryError as exc:
         if logger is not None:
             logger.error("Input discovery failed: %s", exc)
-        print(f"\nProcessing failed.\n\n{exc}\n\nCheck the 'logs' folder for details.\n")
+        message = f"Processing failed.\n\n{exc}\n\nCheck the 'logs' folder for details."
+        print(f"\n{message}\n")
+        show_user_message("Orderbook Automation", message, is_error=True)
         return 1
     except DataValidationError as exc:
         if logger is not None:
             logger.error("Validation failed: %s", exc)
-        print(f"\nProcessing failed.\n\n{exc}\n\nCheck the 'logs' folder for details.\n")
+        message = f"Processing failed.\n\n{exc}\n\nCheck the 'logs' folder for details."
+        print(f"\n{message}\n")
+        show_user_message("Orderbook Automation", message, is_error=True)
         return 1
     except Exception as exc:  # noqa: BLE001 - top-level safety net for business users
         # Use the SAME logger instance configured in setup_logging() so the
@@ -205,12 +217,14 @@ def main() -> int:
         logging.getLogger("orderbook_automation_phase1").exception(
             "Unhandled exception during pipeline execution"
         )
-        print(f"\nProcessing failed.\n\n{exc}\n\nCheck the 'logs' folder for details.\n")
+        message = f"Processing failed.\n\n{exc}\n\nCheck the 'logs' folder for details."
+        print(f"\n{message}\n")
+        show_user_message("Orderbook Automation", message, is_error=True)
         return 1
 
-    output_file = config.output_dir / PRODUCTION_OUTPUT_FILENAME
-    print("\nOrderbook processing completed successfully.")
-    print(f"\nOutput:\n{output_file}\n")
+    message = f"Orderbook processing completed successfully.\n\nOutput:\n{phase4_result.pob_path}"
+    print(f"\n{message}\n")
+    show_user_message("Orderbook Automation", message)
     return 0
 
 

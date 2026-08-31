@@ -55,13 +55,10 @@ def is_debug_mode() -> bool:
 
 
 # The single client-facing business output produced by a production run.
-PRODUCTION_OUTPUT_FILENAME = "POB.xlsx"
-
 # Allow-list of files this application is known to generate inside output/.
 # ONLY these exact filenames may be removed during pre-run cleanup, so any
 # unrelated file a user has placed in output/ is always left untouched.
 APPLICATION_GENERATED_OUTPUT_FILES: tuple[str, ...] = (
-    "POB.xlsx",
     "Workbook_Profile.xlsx",
     "Derived_Data.xlsx",
     "Business_Master_Data.xlsx",

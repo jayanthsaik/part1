@@ -4,6 +4,9 @@ OrderbookAutomation/output/
 OrderbookAutomation/dist/
 OrderbookAutomation/build/
 OrderbookAutomation/release/
+OrderbookAutomation/*-release.zip
+OrderbookAutomation/build_*.exe
+OrderbookAutomation/build_*.pkg
 
 # Python bytecode cache (any folder, anywhere in the repo)
 __pycache__/

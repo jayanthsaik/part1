@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -580,7 +581,7 @@ def run_phase4(
         pob_exceptions_df = pd.DataFrame(pob_exceptions_rows) if pob_exceptions_rows else pd.DataFrame(columns=["Type", "Count"])
         write_dataframe_sheet(pob_workbook, "Exceptions", pob_exceptions_df)
 
-    pob_path = config.output_dir / "POB.xlsx"
+    pob_path = config.output_dir / f"POB_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
     save_workbook(pob_workbook, pob_path)
     logger.info("Wrote final POB workbook to %s", pob_path)
 
