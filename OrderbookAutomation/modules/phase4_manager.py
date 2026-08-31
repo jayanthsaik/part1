@@ -377,6 +377,15 @@ def run_phase4(
     )
     enriched_df = enrichment_result.dataframe
 
+    # The Orderbook source's own pack-size column is still named
+    # "PackSize(MOQ)" at this point in the pipeline -- the rename to the
+    # client-facing "Pack Size (MOQ)" header (ORDERBOOK_COLUMN_RENAMES)
+    # happens later, only for the written reference dataframe. Passing the
+    # wrong name here made _compute_moq_issue_series silently see no column
+    # and always report zero MOQ issues, even though the actual Orderbook
+    # sheet highlight (which reads the written worksheet directly) was fine.
+    pack_size_moq_column = "PackSize(MOQ)" if "PackSize(MOQ)" in enriched_df.columns else "Pack Size (MOQ)"
+
     enriched_df, rule_stats = apply_business_rules(
         enriched_df,
         material_description_column="Material Description",
@@ -384,6 +393,7 @@ def run_phase4(
         wac_bg_price_column="WAC/BG price in EDI",
         ups_inventory_column="UPS Inventory",
         moq_issue_column="MOQ_Issue",
+        pack_size_moq_column=pack_size_moq_column,
         logger=logger,
     )
 

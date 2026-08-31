@@ -24,7 +24,7 @@ from config import (
 from modules.award_lookup import AWARD_EXCEPTION_COLUMNS, build_award_lookup
 from modules.buying_group_lookup import AUDIT_COLUMNS, EXCEPTION_COLUMNS, build_buying_group_lookup
 from modules.historical_sales import resolve_sales_trend_payload_columns
-from modules.utils import normalize_identifier_key, normalize_ndc_key, normalize_text_key
+from modules.utils import coerce_numeric_column, normalize_identifier_key, normalize_ndc_key, normalize_text_key
 
 
 @dataclass(frozen=True)
@@ -232,6 +232,14 @@ def build_master_workbook(
         )
         audit_rows.append(audit_row)
 
+    # BUSINESS RULE: MOQ.xlsx is the authoritative source for Pack Size,
+    # keyed by NDC. The Orderbook's own "PackSize(MOQ)" column is only ever
+    # what SAP had at export time and can drift out of date; wherever
+    # MOQ.xlsx has a value for a row's NDC, it REPLACES the Orderbook's own
+    # value (not just filling blanks), so every downstream MOQ Issue
+    # calculation uses the current, authoritative pack size.
+    master_df = _reconcile_pack_size_with_moq_master(master_df, logger=logger)
+
     # Buying Group uses a dedicated, auditable MULTI-SOURCE lookup (see
     # modules/buying_group_lookup.py) instead of the generic SOURCE_SPECS
     # merge engine. Buying_groups.xlsx alone is known to be incomplete, so
@@ -362,6 +370,14 @@ def _merge_source(
     *,
     debug_keep_temp_keys: bool,
 ) -> tuple[pd.DataFrame, MergeAuditRow]:
+    # Business source files sometimes use slightly different header casing
+    # for the same join key (e.g. MOQ.xlsx ships "NDC code" while every
+    # JoinStrategy declares "NDC Code"). Column lookups elsewhere in this
+    # module are exact-match, so that alone silently drops the merge
+    # entirely ("No compatible join strategy found") -- resolve any declared
+    # join-key column against the source header case-insensitively first.
+    source_df = _resolve_source_key_columns(source_df, spec.strategies)
+
     strategy = _select_strategy(master_df, source_df, spec.strategies)
     if strategy is None:
         return master_df, MergeAuditRow(
@@ -379,7 +395,13 @@ def _merge_source(
     source_selected = source_df[selected_columns].copy()
 
     duplicate_keys_found, conflicting_values = _analyze_duplicates(source_selected, strategy.right_keys)
-    source_selected = source_selected.drop_duplicates(subset=list(strategy.right_keys), keep="first")
+    # Dedup on the NORMALIZED key, not the raw one: the merge below joins on
+    # the normalized key (_compose_key), so raw variants that collapse to the
+    # same normalized value (e.g. "Cvs Pharmacy Inc" vs "CVS PHARMACY INC")
+    # must not both survive -- otherwise every master row for that key gets
+    # matched twice, silently duplicating rows in the final Orderbook sheet.
+    source_selected["__dedup_key__"] = _compose_key(source_selected, strategy.right_keys, strategy.key_modes)
+    source_selected = source_selected.drop_duplicates(subset="__dedup_key__", keep="first").drop(columns="__dedup_key__")
 
     rows_missing = _count_source_keys_not_in_master(master_df, source_selected, strategy)
     (
@@ -424,6 +446,23 @@ def _merge_source(
         duplicate_keys_found=duplicate_keys_found,
         comments=comments,
     )
+
+
+def _resolve_source_key_columns(source_df: pd.DataFrame, strategies: Sequence[JoinStrategy]) -> pd.DataFrame:
+    """Rename source columns to their declared JoinStrategy casing when only
+    casing differs (e.g. "NDC code" -> "NDC Code"), so the exact-match column
+    lookups used everywhere else in this module still find them.
+    """
+    lowered_actual = {str(column).strip().lower(): column for column in source_df.columns}
+    rename_map: dict[str, str] = {}
+    for strategy in strategies:
+        for expected in strategy.right_keys:
+            if expected in source_df.columns:
+                continue
+            actual = lowered_actual.get(expected.strip().lower())
+            if actual is not None:
+                rename_map[actual] = expected
+    return source_df.rename(columns=rename_map) if rename_map else source_df
 
 
 def _select_strategy(master_df: pd.DataFrame, source_df: pd.DataFrame, strategies: Sequence[JoinStrategy]) -> JoinStrategy | None:
@@ -589,6 +628,50 @@ def _validate_lookup(df: pd.DataFrame, ndc_column: str, sold_to_column: str, log
         has_lookup,
         missing_lookup,
     )
+
+
+def _reconcile_pack_size_with_moq_master(df: pd.DataFrame, *, logger) -> pd.DataFrame:
+    """Overwrite the Orderbook's own Pack Size with MOQ.xlsx's value, by NDC.
+
+    MOQ.xlsx (merged above as the "MOQ " column, keyed on normalized NDC) is
+    the authoritative pack-size source. The Orderbook's own "PackSize(MOQ)"
+    column only ever reflects what SAP had at export time and can drift out
+    of date (e.g. Sevelamer showing 20 in the Orderbook when MOQ.xlsx says
+    12). Wherever MOQ.xlsx has a value for a row's NDC, it REPLACES the
+    Orderbook's own value -- not just fills a blank -- so every downstream
+    MOQ Issue calculation (Sales Order Qty / Pack Size) uses the current,
+    authoritative pack size. Rows whose NDC has no MOQ.xlsx match keep
+    their original Orderbook value untouched.
+    """
+    orderbook_column = "PackSize(MOQ)"
+    moq_master_column = LOOKUP_COLUMNS["pack_size_moq"]
+
+    if orderbook_column not in df.columns or moq_master_column not in df.columns:
+        return df
+
+    working = df.copy()
+    orderbook_value = coerce_numeric_column(working[orderbook_column])
+    moq_master_value = coerce_numeric_column(working[moq_master_column])
+
+    has_moq_master_value = moq_master_value.notna()
+    mismatched = has_moq_master_value & (orderbook_value != moq_master_value)
+    mismatch_count = int(mismatched.sum())
+    if mismatch_count > 0:
+        logger.warning(
+            "Pack Size mismatch between Orderbook and MOQ master (NDC-matched): %s row(s); "
+            "MOQ.xlsx value applied as authoritative",
+            mismatch_count,
+        )
+
+    working.loc[has_moq_master_value, orderbook_column] = working.loc[has_moq_master_value, moq_master_column]
+    working = working.drop(columns=[moq_master_column])
+
+    logger.info(
+        "Pack Size reconciliation vs MOQ master | rows_matched_by_ndc=%s | mismatched_and_replaced=%s",
+        int(has_moq_master_value.sum()),
+        mismatch_count,
+    )
+    return working
 
 
 def get_debug_keep_temp_keys_default() -> bool:

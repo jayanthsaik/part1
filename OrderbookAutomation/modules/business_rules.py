@@ -12,13 +12,12 @@ from modules.utils import coerce_numeric_column
 CONTROLLED_PRODUCT_KEYWORDS: tuple[str, ...] = (
     "APAP/Codeine",
     "APAP",
-    "Hydro",
     "Codeine",
     "BAC",
     "Gabapentin",
     "Hydro/Apap",
+    "Hydrocod",
     "Oxycodone",
-    "sevel",
     "Phenobarbital",
     "Testosterone",
     "Tramadol",
@@ -63,8 +62,10 @@ def flag_price_issues(
 ) -> tuple[pd.Series, pd.Series]:
     """Return (Price_Issue, Price_Difference) Series per documented Rule 2.
 
-    Price_Issue is True when Unit Price is exactly 0.00, OR when Unit Price
-    differs from WAC/BG price in EDI (a pricing discrepancy).
+    Price_Issue is True when Unit Price is exactly 0.00, OR when
+    Unit Price - WAC/BG price in EDI is negative (Unit Price undercuts the
+    WAC/BG price), evaluated only when both values are present. A positive
+    difference (Unit Price above WAC/BG price) does not trigger the flag.
     """
     if unit_price_column not in df.columns or wac_bg_price_column not in df.columns:
         price_issue = pd.Series(False, index=df.index)
@@ -77,9 +78,9 @@ def flag_price_issues(
     price_difference = unit_price - wac_bg_price
 
     zero_price = unit_price.fillna(0) == 0
-    discrepancy = (price_difference.fillna(0) != 0) & unit_price.notna() & wac_bg_price.notna()
+    negative_difference = (price_difference < 0) & unit_price.notna() & wac_bg_price.notna()
 
-    price_issue = (zero_price | discrepancy).fillna(True)
+    price_issue = zero_price | negative_difference
     return price_issue, price_difference
 
 
@@ -121,6 +122,8 @@ def apply_business_rules(
     wac_bg_price_column: str,
     ups_inventory_column: str,
     moq_issue_column: str,
+    sales_order_qty_column: str = "Sales Order Qty",
+    pack_size_moq_column: str = "Pack Size (MOQ)",
     logger,
 ) -> tuple[pd.DataFrame, BusinessRuleStats]:
     """Apply all Phase 4 Part B business rules to ``df`` and return flag columns.
@@ -146,7 +149,7 @@ def apply_business_rules(
             "Phase 2 MOQ_Issue column '%s' present but ignored; computing MOQ issues from Orderbook columns",
             moq_issue_column,
         )
-    working["MOQ_Issue"] = _compute_moq_issue_series(working)
+    working["MOQ_Issue"] = _compute_moq_issue_series(working, qty_col=sales_order_qty_column, moq_col=pack_size_moq_column)
 
     working["Low_UPS_Inventory"] = flag_low_ups_inventory(working, ups_inventory_column)
 

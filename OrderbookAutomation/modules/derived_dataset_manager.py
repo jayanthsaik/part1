@@ -86,7 +86,8 @@ def _build_quantity_adjustments(
     double-counted.
 
     ``apply_filters=True``  -> Upload Sheet: keep only rows where Reason Code
-    is 1 or 4 AND Action is Y/Yes (both case-insensitive, numeric or text).
+    is 1 or 4 AND Action starts with "Y" (case-insensitive), e.g. "Y",
+    "Yes", "Y-Pricing issue", "Y-MOQ Issue ask cust to adjust...".
 
     ``apply_filters=False`` -> Morning Completed Order Book: already processed,
     so every row counts.
@@ -115,7 +116,11 @@ def _build_quantity_adjustments(
         # Reason Code may arrive as 1, "1", or 1.0 (Excel float coercion).
         reason_values = working[reason_column].map(_normalize_reason_code)
         action_values = working[action_column].astype("string").str.strip().str.casefold()
-        working = working[reason_values.isin({"1", "4"}) & action_values.isin({"y", "yes"})].copy()
+        # Any value starting with "Y" counts as approved, including annotated
+        # forms like "Y-Pricing issue" or "Y-MOQ Issue ask cust to adjust...",
+        # not just a bare "Y"/"Yes".
+        action_is_yes = action_values.str.startswith("y", na=False)
+        working = working[reason_values.isin({"1", "4"}) & action_is_yes].copy()
 
     working[ndc_column] = working[ndc_column].map(
         lambda value: normalize_ndc_key(value) if pd.notna(value) else value
