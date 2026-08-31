@@ -111,7 +111,17 @@ def determine_reporting_period(master_df: pd.DataFrame, po_date_column: str, log
     exists in the source data.
     """
     if po_date_column in master_df.columns:
-        parsed_dates = pd.to_datetime(master_df[po_date_column], errors="coerce")
+        raw_dates = master_df[po_date_column]
+        if pd.api.types.is_numeric_dtype(raw_dates):
+            # Excel stores dates as a day-count serial number (days since
+            # 1899-12-30). When the source file leaves this column
+            # unformatted, pandas reads it as a plain integer rather than a
+            # datetime. Feeding that integer straight to pd.to_datetime()
+            # would misinterpret it as nanoseconds since the Unix epoch,
+            # producing bogus 1970-ish dates instead of the real date.
+            parsed_dates = pd.to_datetime(raw_dates, unit="D", origin="1899-12-30", errors="coerce")
+        else:
+            parsed_dates = pd.to_datetime(raw_dates, errors="coerce")
         valid_dates = parsed_dates.dropna()
         if not valid_dates.empty:
             year_month_counts = valid_dates.dt.to_period("M").value_counts()
